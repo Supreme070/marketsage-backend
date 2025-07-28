@@ -1,0 +1,22 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+numReplicas = 1
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[deploy.healthcheck]]
+path = "/health/simple"
+port = 3006
+initialDelaySeconds = 10
+periodSeconds = 30
+
+[environments.staging]
+PORT = 3006
+NODE_ENV = "staging"
+
+[environments.production]
+PORT = 3006
+NODE_ENV = "production"

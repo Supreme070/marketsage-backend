@@ -1,0 +1,4988 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
+  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x", "darwin", "darwin-arm64"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Notification model for system notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String // info, success, warning, error
+  category  String // system, campaigns, workflows, etc.
+  read      Boolean  @default(false)
+  link      String? // Optional link to navigate to when clicked
+  timestamp DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Updated UserRole enum to add more specific roles
+enum UserRole {
+  USER
+  ADMIN
+  IT_ADMIN
+  SUPER_ADMIN
+  AI_AGENT
+}
+
+// Organization model
+model Organization {
+  id             String          @id @default(cuid())
+  name           String
+  plan           String          @default("FREE")
+  logoUrl        String?
+  websiteUrl     String?
+  address        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  subscriptions  Subscription[]
+  paymentMethods PaymentMethod[]
+  billingEmail   String?
+  billingName    String?
+  billingAddress String?
+  vatNumber      String?
+
+  // Relations
+  users              User[]
+  integrations       Integration[]
+  contacts           Contact[]
+  lists              List[]
+  emailCampaigns     EmailCampaign[]
+  tasks              Task[]
+  smsProviders       SMSProvider[]
+  whatsappConfigs    WhatsAppBusinessConfig[]
+  emailProviders     EmailProvider[]
+  emailDomainConfigs EmailDomainConfig[]
+
+  // AI Intelligence Relations
+  customerProfiles CustomerProfile[]
+  aiActionPlans    AIActionPlan[]
+  customerEvents   CustomerEvent[]
+
+  // Analytics Relations
+  conversionFunnels ConversionFunnel[]
+  
+  // Social Media Relations
+  socialMediaAccounts SocialMediaAccount[]
+
+  // Unified Messaging Service fields
+  messagingModel     String  @default("customer_managed") // customer_managed | platform_managed
+  creditBalance      Float   @default(0)
+  autoTopUp          Boolean @default(false)
+  autoTopUpAmount    Float   @default(100)
+  autoTopUpThreshold Float   @default(10)
+  preferredProviders String? // JSON string of preferred providers per channel
+  region             String  @default("us")
+
+  // Unified Messaging Relations
+  messagingUsage     MessagingUsage[]
+  creditTransactions CreditTransaction[]
+
+  // MCP Relations
+  mcpCampaignMetrics    MCPCampaignMetrics[]
+  mcpCustomerPredictions MCPCustomerPredictions[]
+  mcpVisitorSessions    MCPVisitorSessions[]
+  mcpMonitoringMetrics  MCPMonitoringMetrics[]
+  
+}
+
+// User model for authentication and platform access
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  password       String?
+  image          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLogin      DateTime?
+  lastLoginAt    DateTime? // Alternative field name for consistency
+  lastActivityAt DateTime? // Track last activity timestamp
+  isActive       Boolean   @default(true)
+  role           UserRole  @default(USER)
+  organizationId String?
+  company        String?
+  
+  // Admin Management Fields
+  isSuspended     Boolean   @default(false) // Whether the user is suspended
+  suspendedAt     DateTime? // When the user was suspended
+  suspendedBy     String?   // Admin who suspended the user
+  suspensionReason String?  // Reason for suspension
+  adminNotes      String?   // Admin notes about the user
+  lastActiveAt    DateTime? // Last activity timestamp for admin tracking
+
+  // Relations
+  organization           Organization?           @relation(fields: [organizationId], references: [id])
+  accounts               Account[]
+  sessions               Session[]
+  socialMediaAccounts    SocialMediaAccount[]    @relation("SocialMediaAccountUser")
+  contacts               Contact[]               @relation("CreatedBy")
+  emailCampaigns         EmailCampaign[]         @relation("CampaignCreator")
+  emailTemplates         EmailTemplate[]         @relation("TemplateCreator")
+  smsCampaigns           SMSCampaign[]           @relation("SMSCampaignCreator")
+  smsTemplates           SMSTemplate[]           @relation("SMSTemplateCreator")
+  waCampaigns            WhatsAppCampaign[]      @relation("WACampaignCreator")
+  waTemplates            WhatsAppTemplate[]      @relation("WATemplateCreator")
+  workflows              Workflow[]              @relation("WorkflowCreator")
+  lists                  List[]                  @relation("ListCreator")
+  segments               Segment[]               @relation("SegmentCreator")
+  createdIntegrations    Integration[]           @relation("IntegrationCreator")
+  abTests                ABTest[]                @relation("ABTestCreator")
+  conversionEvents       ConversionEvent[]       @relation("ConversionEventCreator")
+  conversionFunnels      ConversionFunnel[]      @relation("FunnelCreator")
+  contentAnalyses        ContentAnalysis[]       @relation("ContentAnalysisCreator")
+  contentRecommendations ContentRecommendation[] @relation("ContentRecommendationUser")
+  subjectLineTests       SubjectLineTest[]       @relation("SubjectLineTestCreator")
+  journeys               Journey[]               @relation("JourneyCreator")
+
+  // Task management relations
+  createdTasks  Task[]        @relation("TaskCreator")
+  assignedTasks Task[]        @relation("TaskAssignee")
+  taskComments  TaskComment[]
+
+  // AI Intelligence relations
+  aiContentAnalyses  AI_ContentAnalysis[] @relation("UserToContentAnalysis")
+  aiCustomerSegments AI_CustomerSegment[] @relation("UserToCustomerSegment")
+  aiChatHistory      AI_ChatHistory[]     @relation("UserToChatHistory")
+  aiTools            AI_Tool[]            @relation("UserToAITool")
+  aiMemories         AIMemory[]           @relation("UserToAIMemory")
+  aiOrgMemories      AIMemory[]           @relation("OrgToAIMemory")
+
+  // New relations
+  activities    UserActivity[]
+  notifications Notification[]
+  preferences   UserPreference?
+
+  // Admin relations
+  adminAuditLogs           AdminAuditLog[]   @relation("AdminAuditLogs")
+  adminSessions            AdminSession[]    @relation("AdminSessions")
+  securityEventsCreated    SecurityEvent[]   @relation("SecurityEvents")
+  securityEventsResolved   SecurityEvent[]   @relation("SecurityEventResolver")
+  supportTicketsCreated    SupportTicket[]   @relation("UserSupportTickets")
+  supportTicketsAssigned   SupportTicket[]   @relation("AssignedSupportTickets")
+  supportMessagesSent      SupportMessage[]  @relation("SupportMessageSender")
+  systemAlertsResolved     SystemAlert[]     @relation("SystemAlertResolver")
+
+  // LeadPulse Form Builder relations
+  createdForms LeadPulseForm[] @relation("FormCreator")
+
+  // Security & Compliance relations
+  securityEvents LeadPulseSecurityEvent[]
+  auditLogs      LeadPulseAuditLog[]
+  consents       LeadPulseConsent[]       @relation("UserConsents")
+
+  // AI Action Plan relations
+  approvedActions AIActionPlan[] @relation("AIActionApprover")
+  executedActions AIActionPlan[] @relation("AIActionExecutor")
+
+  // History relations
+  smsHistory      SMSHistory[]
+  whatsappHistory WhatsAppHistory[]
+
+  // Safety & Approval System relations
+  approvalRequests   ApprovalRequest[] @relation("ApprovalRequester")
+  approvedRequests   ApprovalRequest[] @relation("ApprovalApprover")
+  safetyViolations   SafetyViolation[]
+  resolvedViolations SafetyViolation[] @relation("ViolationResolver")
+
+  // Workflow Version Control relations
+  createdVersions WorkflowVersion[]    @relation("CreatedBy")
+  deployments     WorkflowDeployment[] @relation("DeployedBy")
+  rollbacks       WorkflowRollback[]   @relation("RolledBackBy")
+  branches        WorkflowBranch[]     @relation("BranchCreator")
+  versionTags     WorkflowVersionTag[] @relation("TagCreator")
+  approvals       WorkflowApproval[]   @relation("WorkflowApprover")
+
+  // Workflow Template Marketplace relations
+  createdTemplates    WorkflowTemplate[]             @relation("TemplateCreator")
+  templateInstalls    WorkflowTemplateInstallation[] @relation("TemplateInstaller")
+  templateReviews     WorkflowTemplateReview[]       @relation("TemplateReviewer")
+  templateCollections WorkflowTemplateCollection[]   @relation("CollectionCreator")
+  templateAnalytics   WorkflowTemplateAnalytics[]    @relation("TemplateAnalytics")
+
+  // Workflow Cost & Budget relations
+  createdBudgets   WorkflowBudget[]    @relation("BudgetCreator")
+  resolvedAlerts   WorkflowCostAlert[] @relation("AlertResolver")
+  createdCostRules WorkflowCostRule[]  @relation("CostRuleCreator")
+
+  // Workflow Compliance relations
+  createdComplianceRules       WorkflowComplianceRule[]      @relation("ComplianceRuleCreator")
+  remediatedChecks             WorkflowComplianceCheck[]     @relation("ComplianceRemediation")
+  resolvedViolationsCompliance WorkflowComplianceViolation[] @relation("ViolationResolver")
+  generatedReports             WorkflowComplianceReport[]    @relation("ComplianceReportGenerator")
+  updatedConfigurations        ComplianceConfiguration[]     @relation("ComplianceConfigUpdater")
+
+  // LeadPulse Attribution relations
+  createdAttributionConfigs LeadPulseAttributionConfig[] @relation("AttributionConfigCreator")
+  createdCampaigns          LeadPulseCampaign[]          @relation("CampaignCreator")
+  createdConversionWindows  LeadPulseConversionWindow[]  @relation("ConversionWindowCreator")
+
+  // Admin Management Relations
+  adminNotesCreated     AdminNote[]      @relation("CreatedAdminNotes")
+  adminNotesUpdated     AdminNote[]      @relation("UpdatedAdminNotes") 
+  adminNotesAboutMe     AdminNote[]      @relation("UserAdminNotes")
+
+  @@index([email])
+  @@index([lastLoginAt])
+  @@index([lastActivityAt])
+  @@index([suspendedAt])
+  @@index([suspendedBy])
+}
+
+// User Preferences model
+model UserPreference {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  preferences String // JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSession {
+  id         String    @id @default(cuid())
+  activityId String
+  startTime  DateTime  @default(now())
+  endTime    DateTime?
+  duration   Int? // in seconds
+
+  // Relations
+  activity UserActivity @relation(fields: [activityId], references: [id])
+
+  @@index([activityId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Integration model
+model Integration {
+  id             String            @id @default(cuid())
+  type           String
+  name           String
+  description    String?
+  credentials    String // Encrypted JSON string
+  status         IntegrationStatus @default(PENDING)
+  lastSyncedAt   DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organizationId String
+  createdBy      String
+
+  // Relations
+  organization Organization             @relation(fields: [organizationId], references: [id])
+  creator      User                     @relation("IntegrationCreator", fields: [createdBy], references: [id])
+  syncHistory  IntegrationSyncHistory[]
+}
+
+// Integration sync history
+model IntegrationSyncHistory {
+  id               String     @id @default(cuid())
+  integrationId    String
+  status           SyncStatus
+  startedAt        DateTime   @default(now())
+  completedAt      DateTime?
+  recordsProcessed Int?
+  error            String?
+
+  // Relations
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+}
+
+// Core application models
+model Contact {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  firstName      String?
+  lastName       String?
+  phone          String?
+  company        String?
+  jobTitle       String?
+  address        String?
+  city           String?
+  state          String?
+  country        String?
+  postalCode     String?
+  notes          String?
+  tagsString     String? // JSON array stored as string
+  source         String?
+  customFields   String? // JSON object
+  status         ContactStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  lastEngaged    DateTime?
+  emailVerified  Boolean       @default(false)
+  phoneVerified  Boolean       @default(false)
+  createdById    String
+  organizationId String? // Made optional for safe migration
+
+  // Relations
+  createdBy           User                 @relation("CreatedBy", fields: [createdById], references: [id])
+  organization        Organization?        @relation(fields: [organizationId], references: [id])
+  listMembers         ListMember[]
+  segmentMembers      SegmentMember[]
+  emailActivities     EmailActivity[]
+  smsActivities       SMSActivity[]
+  waActivities        WhatsAppActivity[]
+  workflowExecutions  WorkflowExecution[]
+  workflowEvents      WorkflowEvent[]
+  contactJourneys     ContactJourney[]
+  conversionEvents    ConversionEvent[]
+  conversionTrackings ConversionTracking[]
+
+  // LeadPulse Form Builder relations
+  formSubmissions   LeadPulseFormSubmission[]
+  leadPulseConsents LeadPulseConsent[]
+
+  // AI and Analytics relations
+  customerProfile CustomerProfile?
+  customerEvents  CustomerEvent[]
+
+  // History relations
+  smsHistory      SMSHistory[]
+  whatsappHistory WhatsAppHistory[]
+
+  // MCP Relations
+  mcpCustomerPredictions MCPCustomerPredictions[]
+
+  @@index([organizationId])
+}
+
+// Central Customer Profile - The Brain's Memory for AI Intelligence
+model CustomerProfile {
+  id             String @id @default(cuid())
+  contactId      String @unique
+  organizationId String
+
+  // --- Core Transaction Metrics (Updated by batch jobs) ---
+  totalTransactions          Int       @default(0)
+  totalValue                 Float     @default(0) // Total monetary value
+  firstTransactionDate       DateTime?
+  lastTransactionDate        DateTime?
+  avgTimeBetweenTransactions Float? // in days
+  avgTransactionValue        Float     @default(0)
+
+  // --- Engagement Metrics (From LeadPulse & Activities) ---
+  engagementScore    Int       @default(0) // 0-100 composite score
+  lastSeenDate       DateTime?
+  totalPageViews     Int       @default(0)
+  totalEmailOpens    Int       @default(0)
+  totalEmailClicks   Int       @default(0)
+  totalSMSResponses  Int       @default(0)
+  mostVisitedPage    String?
+  preferredChannel   String? // email, sms, whatsapp
+  optimalContactTime String? // JSON: {"day": "Tuesday", "hour": 14}
+
+  // --- Behavioral Patterns ---
+  communicationFrequency String? // daily, weekly, monthly
+  purchasePattern        String? // seasonal, regular, impulse
+  engagementTrend        String? // increasing, stable, declining
+
+  // --- AI/ML Predictions (Updated by Supreme-AI) ---
+  churnProbability Float?  @default(0) // 0.0 to 1.0
+  churnRiskLevel   String? // LOW, MEDIUM, HIGH, CRITICAL
+  predictedLtv     Float? // Predicted Lifetime Value
+  customerSegment  String? // VIP, At-Risk, New, Champion, Loyal
+  healthScore      Int?    @default(50) // 0-100 overall health
+
+  // --- Next Best Actions (AI Decisions) ---
+  nextBestAction Json? // ActionPlan from Supreme-AI
+  lastActionDate DateTime?
+  actionHistory  Json? // Array of recent actions and outcomes
+
+  // --- Birthday & Special Events ---
+  hasBirthday        Boolean   @default(false)
+  nextBirthdayAction DateTime?
+  specialDates       Json? // Anniversary, membership, etc.
+
+  // --- Risk & Opportunity Flags ---
+  riskFactors   Json? // Array of current risk indicators
+  opportunities Json? // Array of upsell/cross-sell opportunities
+
+  // --- AI Learning Data ---
+  aiConfidence       Float?    @default(0.5) // AI confidence in predictions
+  modelVersion       String?   @default("1.0") // Track which model version
+  lastPredictionDate DateTime?
+
+  // --- Timestamps ---
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastCalculated DateTime? // When metrics were last updated
+
+  // Relations
+  contact      Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization Organization    @relation(fields: [organizationId], references: [id])
+  aiActions    AIActionPlan[]
+  events       CustomerEvent[]
+
+  @@index([organizationId])
+  @@index([churnProbability])
+  @@index([healthScore])
+  @@index([customerSegment])
+  @@index([lastCalculated])
+}
+
+// AI Action Plans & Execution History
+model AIActionPlan {
+  id                String @id @default(cuid())
+  customerProfileId String
+  organizationId    String
+
+  // Action Details
+  actionType String // SEND_EMAIL, CREATE_TASK, APPLY_DISCOUNT, etc.
+  confidence Float // 0.0 to 1.0
+  reasoning  String // Human-readable explanation
+  payload    Json // Action-specific data
+
+  // Execution Status
+  status       String    @default("PENDING") // PENDING, APPROVED, EXECUTED, FAILED
+  scheduledFor DateTime?
+  executedAt   DateTime?
+  executedBy   String? // user ID or "system"
+
+  // Results & Learning
+  executionResult  Json? // Outcome data
+  success          Boolean?
+  customerResponse Json? // How customer responded
+  impactMeasured   Json? // Measured business impact
+
+  // Governance
+  requiresApproval Boolean   @default(false)
+  approvedBy       String?
+  approvedAt       DateTime?
+  riskLevel        String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  customerProfile CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  approver        User?           @relation("AIActionApprover", fields: [approvedBy], references: [id])
+  executor        User?           @relation("AIActionExecutor", fields: [executedBy], references: [id])
+
+  @@index([organizationId, status])
+  @@index([customerProfileId])
+  @@index([scheduledFor])
+}
+
+// Real-time Customer Events for Event Bus
+model CustomerEvent {
+  id                String  @id @default(cuid())
+  contactId         String
+  customerProfileId String?
+  organizationId    String
+
+  eventType String // page_view, email_open, purchase, etc.
+  eventData Json // Event-specific payload
+  timestamp DateTime @default(now())
+  source    String // leadpulse, email, sms, api, etc.
+  processed Boolean  @default(false)
+
+  // Relations
+  contact         Contact          @relation(fields: [contactId], references: [id])
+  customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, processed])
+  @@index([contactId])
+  @@index([timestamp])
+}
+
+model List {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  type           ListType @default(STATIC)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdById    String
+  organizationId String? // Made optional for safe migration
+
+  // Relations
+  createdBy      User               @relation("ListCreator", fields: [createdById], references: [id])
+  organization   Organization?      @relation(fields: [organizationId], references: [id])
+  members        ListMember[]
+  emailCampaigns EmailCampaign[]    @relation("CampaignLists")
+  smsCampaigns   SMSCampaign[]      @relation("SMSCampaignLists")
+  waCampaigns    WhatsAppCampaign[] @relation("WACampaignLists")
+
+  @@index([organizationId])
+}
+
+model ListMember {
+  id        String   @id @default(cuid())
+  listId    String
+  contactId String
+  addedAt   DateTime @default(now())
+
+  // Relations
+  list    List    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, contactId])
+}
+
+model SegmentMember {
+  id        String   @id @default(cuid())
+  segmentId String
+  contactId String
+  addedAt   DateTime @default(now())
+
+  // Relations
+  segment Segment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([segmentId, contactId])
+}
+
+model Segment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  rules       String // JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy      User               @relation("SegmentCreator", fields: [createdById], references: [id])
+  members        SegmentMember[]
+  emailCampaigns EmailCampaign[]    @relation("CampaignSegments")
+  smsCampaigns   SMSCampaign[]      @relation("SMSCampaignSegments")
+  waCampaigns    WhatsAppCampaign[] @relation("WACampaignSegments")
+}
+
+// Email marketing models
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  subject     String
+  content     String
+  design      String? // JSON string
+  previewText String?
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy User            @relation("TemplateCreator", fields: [createdById], references: [id])
+  campaigns EmailCampaign[]
+}
+
+model EmailCampaign {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  subject        String
+  from           String
+  replyTo        String?
+  templateId     String?
+  content        String?
+  design         String? // JSON string
+  status         CampaignStatus @default(DRAFT)
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdById    String
+  organizationId String? // Made optional for safe migration
+
+  // Relations
+  createdBy    User            @relation("CampaignCreator", fields: [createdById], references: [id])
+  organization Organization?   @relation(fields: [organizationId], references: [id])
+  template     EmailTemplate?  @relation(fields: [templateId], references: [id])
+  lists        List[]          @relation("CampaignLists")
+  segments     Segment[]       @relation("CampaignSegments")
+  activities   EmailActivity[]
+  tasks        Task[]
+
+  @@index([organizationId])
+}
+
+model EmailActivity {
+  id         String       @id @default(cuid())
+  campaignId String
+  contactId  String
+  type       ActivityType
+  timestamp  DateTime     @default(now())
+  metadata   String? // JSON string
+
+  // Relations
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+// SMS marketing models
+model SMSTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  content     String
+  variables   String // JSON string for array
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy User          @relation("SMSTemplateCreator", fields: [createdById], references: [id])
+  campaigns SMSCampaign[]
+}
+
+// A/B Testing models
+model ABTest {
+  id                  String       @id @default(cuid())
+  name                String
+  description         String?
+  entityType          EntityType
+  entityId            String
+  status              ABTestStatus @default(DRAFT)
+  testType            ABTestType
+  testElements        String // JSON array of element keys being tested
+  winnerMetric        ABTestMetric
+  winnerThreshold     Float? // Minimum confidence level to declare winner (0-1)
+  distributionPercent Float // Percent of audience for testing (0-1)
+  winnerVariantId     String? // ID of winning variant (if concluded)
+  startedAt           DateTime?
+  endedAt             DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  createdById         String
+
+  // Relations
+  createdBy User            @relation("ABTestCreator", fields: [createdById], references: [id])
+  variants  ABTestVariant[]
+  results   ABTestResult[]
+}
+
+model ABTestVariant {
+  id             String   @id @default(cuid())
+  testId         String
+  name           String
+  description    String?
+  content        String // JSON object with values for each test element
+  trafficPercent Float // Percent of test traffic (0-1)
+  createdAt      DateTime @default(now())
+
+  // Relations
+  test    ABTest         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  results ABTestResult[]
+}
+
+model ABTestResult {
+  id         String       @id @default(cuid())
+  testId     String
+  variantId  String
+  metric     ABTestMetric
+  value      Float
+  sampleSize Int
+  recordedAt DateTime     @default(now())
+
+  // Relations
+  test    ABTest        @relation(fields: [testId], references: [id], onDelete: Cascade)
+  variant ABTestVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, variantId, metric])
+}
+
+// A/B Testing enums
+enum ABTestStatus {
+  DRAFT
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum ABTestType {
+  SIMPLE_AB // Simple A/B (2 variants)
+  MULTIVARIATE // Multiple variants (A/B/C/D)
+  ELEMENT // Testing specific elements only
+}
+
+enum ABTestMetric {
+  OPEN_RATE
+  CLICK_RATE
+  CONVERSION_RATE
+  REVENUE
+  CUSTOM
+}
+
+model SMSCampaign {
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  from         String
+  templateId   String?
+  content      String?
+  status       CampaignStatus @default(DRAFT)
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdById  String
+
+  // Relations
+  createdBy  User          @relation("SMSCampaignCreator", fields: [createdById], references: [id])
+  template   SMSTemplate?  @relation(fields: [templateId], references: [id])
+  lists      List[]        @relation("SMSCampaignLists")
+  segments   Segment[]     @relation("SMSCampaignSegments")
+  activities SMSActivity[]
+}
+
+model SMSActivity {
+  id         String       @id @default(cuid())
+  campaignId String
+  contactId  String
+  type       ActivityType
+  timestamp  DateTime     @default(now())
+  metadata   String? // JSON string
+
+  // Relations
+  campaign SMSCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+// SMS History model for individual message tracking
+model SMSHistory {
+  id              String   @id @default(cuid())
+  to              String // Recipient phone number
+  from            String? // Sender phone number
+  message         String // Final message content
+  originalMessage String? // Original message before personalization
+  contactId       String? // Optional contact reference
+  userId          String // User who sent the message
+  status          String // SENT, DELIVERED, FAILED, etc.
+  messageId       String? // Provider message ID
+  error           String? // JSON string for error details
+  metadata        String? // JSON string for additional data
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([messageId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// WhatsApp marketing models
+model WhatsAppTemplate {
+  id          String           @id @default(cuid())
+  name        String
+  content     String
+  variables   String // JSON string for array
+  category    String?
+  status      WATemplateStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdById String
+
+  // Relations
+  createdBy       User               @relation("WATemplateCreator", fields: [createdById], references: [id])
+  campaigns       WhatsAppCampaign[]
+  whatsappHistory WhatsAppHistory[]
+}
+
+model WhatsAppCampaign {
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  from         String
+  templateId   String?
+  content      String?
+  status       CampaignStatus @default(DRAFT)
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  createdById  String
+
+  // Relations
+  createdBy  User               @relation("WACampaignCreator", fields: [createdById], references: [id])
+  template   WhatsAppTemplate?  @relation(fields: [templateId], references: [id])
+  lists      List[]             @relation("WACampaignLists")
+  segments   Segment[]          @relation("WACampaignSegments")
+  activities WhatsAppActivity[]
+}
+
+model WhatsAppActivity {
+  id         String       @id @default(cuid())
+  campaignId String
+  contactId  String
+  type       ActivityType
+  timestamp  DateTime     @default(now())
+  metadata   String? // JSON string
+
+  // Relations
+  campaign WhatsAppCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact  Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+// WhatsApp History model for individual message tracking
+model WhatsAppHistory {
+  id              String   @id @default(cuid())
+  to              String // Recipient phone number
+  message         String // Final message content
+  originalMessage String? // Original message before personalization
+  contactId       String? // Optional contact reference
+  templateId      String? // Optional template reference
+  userId          String // User who sent the message
+  status          String // SENT, DELIVERED, READ, FAILED, etc.
+  messageId       String? // WhatsApp message ID
+  error           String? // JSON string for error details
+  metadata        String? // JSON string for additional data
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  contact  Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  template WhatsAppTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([messageId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Workflow automation models
+model Workflow {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  status      WorkflowStatus @default(INACTIVE)
+  definition  String // JSON string
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  createdById String
+
+  // Performance tracking fields (added for compatibility)
+  performanceScore Float?  @default(0)
+  complexityRating String? @default("SIMPLE")
+  totalExecutions  Int     @default(0)
+  successRate      Float?  @default(0)
+
+  // Relations
+  createdBy  User                @relation("WorkflowCreator", fields: [createdById], references: [id])
+  nodes      WorkflowNode[]
+  triggers   WorkflowTrigger[]
+  executions WorkflowExecution[]
+  events     WorkflowEvent[]
+  analytics  WorkflowAnalytics[]
+
+  // Version Control relations
+  versions    WorkflowVersion[]
+  deployments WorkflowDeployment[]
+  rollbacks   WorkflowRollback[]
+  comparisons WorkflowVersionComparison[]
+  branches    WorkflowBranch[]
+
+  // Template Marketplace relations
+  templateInstallations WorkflowTemplateInstallation[]
+
+  // Cost Tracking relations
+  costTracking    WorkflowCostTracking?
+  budgets         WorkflowBudget[]
+  costAlerts      WorkflowCostAlert[]
+  costEntries     WorkflowCostEntry[]
+  costRules       WorkflowCostRule[]
+  costProjections WorkflowCostProjection[]
+
+  // Compliance relations
+  complianceChecks     WorkflowComplianceCheck[]
+  complianceViolations WorkflowComplianceViolation[]
+  complianceReports    WorkflowComplianceReport[]
+
+  @@index([status, createdAt])
+  @@index([performanceScore, status])
+  @@index([createdById, status])
+}
+
+model WorkflowNode {
+  id         String           @id @default(cuid())
+  workflowId String
+  type       WorkflowNodeType
+  name       String?
+  config     String // JSON string
+  positionX  Float?
+  positionY  Float?
+
+  // Relations
+  workflow Workflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  outgoing Connection[] @relation("SourceNode")
+  incoming Connection[] @relation("TargetNode")
+}
+
+model Connection {
+  id        String  @id @default(cuid())
+  sourceId  String
+  targetId  String
+  condition String? // JSON string
+
+  // Relations
+  source WorkflowNode @relation("SourceNode", fields: [sourceId], references: [id], onDelete: Cascade)
+  target WorkflowNode @relation("TargetNode", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+}
+
+model WorkflowTrigger {
+  id         String      @id @default(cuid())
+  workflowId String
+  type       TriggerType
+  config     String // JSON string
+
+  // Relations
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+// Workflow Execution Models
+model WorkflowExecution {
+  id             String                  @id @default(cuid())
+  workflowId     String
+  contactId      String
+  status         WorkflowExecutionStatus @default(RUNNING)
+  currentStepId  String?
+  context        String // JSON string with execution context
+  startedAt      DateTime                @default(now())
+  completedAt    DateTime?
+  lastExecutedAt DateTime?
+  errorMessage   String?
+  retryCount     Int                     @default(0)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  // Relations
+  workflow          Workflow                @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  contact           Contact                 @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  steps             WorkflowExecutionStep[]
+  WorkflowCostEntry WorkflowCostEntry[]
+
+  @@unique([workflowId, contactId])
+  @@index([status, lastExecutedAt])
+}
+
+model WorkflowExecutionStep {
+  id           String              @id @default(cuid())
+  executionId  String
+  stepId       String // Node ID from workflow definition
+  stepType     String // Node type
+  status       StepExecutionStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  scheduledFor DateTime?
+  output       String? // JSON string with step output
+  errorMessage String?
+  retryState   String? // JSON string with retry state information
+
+  // Relations
+  execution   WorkflowExecution   @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  costEntries WorkflowCostEntry[]
+
+  @@index([executionId, stepId])
+  @@index([status, scheduledFor])
+}
+
+// =================================================================
+// LEADPULSE SECURITY & COMPLIANCE MODELS
+// =================================================================
+
+model LeadPulseSecurityEvent {
+  id         String            @id @default(cuid())
+  type       SecurityEventType
+  severity   SecuritySeverity
+  source     String
+  details    Json? // Event-specific details
+  timestamp  DateTime          @default(now())
+  userId     String?
+  ipAddress  String?
+  userAgent  String?
+  resolved   Boolean           @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, severity, timestamp])
+  @@index([userId, timestamp])
+  @@index([ipAddress, timestamp])
+}
+
+model LeadPulseDataProcessingLog {
+  id             String             @id @default(cuid())
+  type           DataProcessingType
+  dataSubject    String // Email or identifier of data subject
+  dataTypes      String[] // Types of data processed
+  purpose        String // Purpose of processing
+  legalBasis     String // GDPR legal basis
+  processor      String? // Third-party processor if applicable
+  timestamp      DateTime           @default(now())
+  retentionUntil DateTime? // When data should be deleted
+  deleted        Boolean            @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime           @default(now())
+
+  @@index([dataSubject, timestamp])
+  @@index([type, timestamp])
+  @@index([retentionUntil])
+}
+
+model LeadPulseAuditLog {
+  id         String   @id @default(cuid())
+  action     String // Action performed (CREATE, UPDATE, DELETE, VIEW)
+  resource   String // Resource type (visitor, form, contact, etc.)
+  resourceId String // ID of the affected resource
+  userId     String? // User who performed the action
+  userEmail  String? // Email of the user
+  ipAddress  String?
+  userAgent  String?
+  changes    Json? // Before/after values for updates
+  metadata   Json? // Additional context
+  timestamp  DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([resource, resourceId, timestamp])
+  @@index([userId, timestamp])
+  @@index([action, timestamp])
+}
+
+model LeadPulseConsent {
+  id          String      @id @default(cuid())
+  contactId   String? // If associated with a contact
+  userId      String // User who owns this consent record
+  email       String // Email address
+  consentType ConsentType
+  purpose     String // Purpose of data processing
+  granted     Boolean
+  grantedAt   DateTime?
+  withdrawnAt DateTime?
+  ipAddress   String?
+  userAgent   String?
+  source      String? // Source of consent (form, api, etc.)
+  evidenceUrl String? // URL to consent evidence
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user    User     @relation("UserConsents", fields: [userId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([email, consentType])
+  @@index([contactId])
+  @@index([granted, grantedAt])
+}
+
+model LeadPulseDataRetention {
+  id                String    @id @default(cuid())
+  resource          String // Resource type
+  resourceId        String // Resource ID
+  dataType          String // Type of data
+  retentionPeriod   Int // Retention period in days
+  createdAt         DateTime  @default(now())
+  scheduledDeletion DateTime // When data should be deleted
+  deleted           Boolean   @default(false)
+  deletedAt         DateTime?
+
+  @@index([resource, resourceId])
+  @@index([scheduledDeletion, deleted])
+  @@index([dataType, scheduledDeletion])
+}
+
+// =================================================================
+// ENUMS FOR SECURITY & COMPLIANCE
+// =================================================================
+
+enum SecurityEventType {
+  LOGIN_ATTEMPT
+  FAILED_LOGIN
+  SUSPICIOUS_ACTIVITY
+  RATE_LIMIT_EXCEEDED
+  INVALID_INPUT
+  UNAUTHORIZED_ACCESS
+  DATA_BREACH_ATTEMPT
+  LOGIN_FAILURE
+  PERMISSION_DENIED
+  MALICIOUS_FILE_UPLOAD
+  XSS_ATTEMPT
+  SQL_INJECTION_ATTEMPT
+  PRIVILEGE_ESCALATION
+  MALICIOUS_REQUEST
+  PASSWORD_RESET
+  ACCOUNT_LOCKED
+  API_ABUSE
+}
+
+enum SecuritySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DataProcessingType {
+  COLLECTION
+  PROCESSING
+  SHARING
+  DELETION
+  ACCESS
+  RECTIFICATION
+  RESTRICTION
+  PORTABILITY
+}
+
+enum ConsentType {
+  MARKETING
+  ANALYTICS
+  FUNCTIONAL
+  NECESSARY
+  THIRD_PARTY_SHARING
+}
+
+model WorkflowEvent {
+  id         String   @id @default(cuid())
+  workflowId String?
+  contactId  String?
+  eventType  String // trigger type
+  eventData  String // JSON string
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  workflow Workflow? @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  contact  Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([eventType, processed, createdAt])
+}
+
+// Analytics models
+model Analytics {
+  id         String          @id @default(cuid())
+  entityType EntityType
+  entityId   String
+  period     AnalyticsPeriod
+  metrics    String // JSON string
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([entityType, entityId, period])
+}
+
+// Enums
+enum ContactStatus {
+  ACTIVE
+  UNSUBSCRIBED
+  BOUNCED
+  SPAM
+}
+
+enum ListType {
+  STATIC
+  DYNAMIC
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum ActivityType {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  UNSUBSCRIBED
+  REPLIED
+  FAILED
+}
+
+enum WATemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WorkflowStatus {
+  ACTIVE
+  INACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum WorkflowNodeType {
+  TRIGGER
+  CONDITION
+  ACTION
+  DELAY
+  EMAIL
+  SMS
+  WHATSAPP
+  NOTIFICATION
+  WEBHOOK
+  API_CALL
+  CRM_ACTION
+  PAYMENT_WEBHOOK
+  DATABASE_ACTION
+}
+
+enum TriggerType {
+  CONTACT_CREATED
+  CONTACT_UPDATED
+  EMAIL_OPENED
+  EMAIL_CLICKED
+  FORM_SUBMITTED
+  WEBHOOK
+  SCHEDULED
+}
+
+enum EntityType {
+  EMAIL_CAMPAIGN
+  SMS_CAMPAIGN
+  WHATSAPP_CAMPAIGN
+  WORKFLOW
+  LIST
+  SEGMENT
+}
+
+enum AnalyticsPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum IntegrationStatus {
+  PENDING
+  ACTIVE
+  ERROR
+  INACTIVE
+}
+
+enum SyncStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// AI Features Models
+
+// Engagement time tracking for send time optimization
+model EngagementTime {
+  id             String       @id @default(cuid())
+  contactId      String
+  entityType     EntityType
+  entityId       String
+  engagementType ActivityType
+  dayOfWeek      Int // 0-6 (Sunday-Saturday)
+  hourOfDay      Int // 0-23
+  timestamp      DateTime     @default(now())
+
+  @@index([contactId, entityType, engagementType])
+  @@index([dayOfWeek, hourOfDay])
+}
+
+// Smart segment suggestions
+model SmartSegment {
+  id          String             @id @default(cuid())
+  name        String
+  description String
+  rules       String // JSON string with segment criteria
+  score       Float // Relevance score (0-1)
+  status      SmartSegmentStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  lastUpdated DateTime           @updatedAt
+}
+
+// Content templates for AI-assisted content generation
+model ContentTemplate {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  industry    String?
+  category    String
+  type        ContentTemplateType
+  template    String // Template with placeholders
+  keywords    String? // JSON string of relevant keywords
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+// Content template usage tracking
+model ContentGeneration {
+  id          String     @id @default(cuid())
+  templateId  String?
+  entityType  EntityType
+  entityId    String
+  prompt      String? // User input for generation
+  result      String // Generated content
+  createdById String
+  createdAt   DateTime   @default(now())
+}
+
+// Send time optimization model
+model SendTimeOptimization {
+  id              String   @id @default(cuid())
+  contactId       String
+  dayOfWeek       Int // 0-6 (Sunday-Saturday)
+  hourOfDay       Int // 0-23
+  engagementScore Float // 0-1 score for this time period
+  confidenceLevel Float // 0-1 based on amount of data
+  lastUpdated     DateTime @updatedAt
+
+  @@unique([contactId, dayOfWeek, hourOfDay])
+}
+
+// New enums for AI features
+enum SmartSegmentStatus {
+  PENDING
+  ACTIVE
+  ARCHIVED
+}
+
+enum ContentTemplateType {
+  EMAIL_SUBJECT
+  EMAIL_BODY
+  SMS_MESSAGE
+  WHATSAPP_MESSAGE
+  PUSH_NOTIFICATION
+}
+
+// Enhanced Conversion Tracking & Attribution Models
+model ConversionEvent {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  eventType   String // Custom event type key
+  category    ConversionCategory
+  valueType   ConversionValueType @default(COUNT)
+  isSystem    Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  createdById String
+
+  // Relations
+  createdBy User                 @relation("ConversionEventCreator", fields: [createdById], references: [id])
+  trackings ConversionTracking[]
+  contacts  Contact[]
+}
+
+model ConversionTracking {
+  id               String           @id @default(cuid())
+  eventId          String
+  entityType       EntityType
+  entityId         String
+  contactId        String?
+  value            Float? // Monetary or numeric value of conversion
+  occurredAt       DateTime         @default(now())
+  metadata         String? // JSON string with additional data
+  attributionModel AttributionModel @default(LAST_TOUCH)
+  touchPoints      String? // JSON array of touch points in the journey
+
+  // Relations
+  event   ConversionEvent @relation(fields: [eventId], references: [id])
+  contact Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([contactId])
+  @@index([eventId])
+}
+
+model ConversionFunnel {
+  id             String   @id @default(cuid())
+  funnelId       String   @unique // External funnel ID used by analytics engine
+  name           String
+  description    String?
+  steps          Json // JSON array of funnel steps
+  goalValue      Float    @default(0)
+  isActive       Boolean  @default(true)
+  metadata       Json? // JSON with micro-conversions and other metadata
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdById    String?
+
+  // Relations
+  organization Organization             @relation(fields: [organizationId], references: [id])
+  createdBy    User?                    @relation("FunnelCreator", fields: [createdById], references: [id])
+  reports      ConversionFunnelReport[]
+
+  @@index([organizationId])
+  @@index([funnelId])
+  @@index([isActive])
+}
+
+model ConversionFunnelReport {
+  id        String   @id @default(cuid())
+  funnelId  String
+  startDate DateTime
+  endDate   DateTime
+  data      String // JSON with stage data and drop-off rates
+  createdAt DateTime @default(now())
+
+  // Relations
+  funnel ConversionFunnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+}
+
+model AttributionSettings {
+  id             String           @id @default(cuid())
+  defaultModel   AttributionModel @default(LAST_TOUCH)
+  customWeights  String? // JSON string with custom weights for U-shaped/custom models
+  lookbackWindow Int              @default(30) // Days to look back for attribution
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+enum ConversionCategory {
+  AWARENESS // Top of funnel
+  CONSIDERATION // Middle of funnel
+  CONVERSION // Bottom of funnel
+  RETENTION // Post-purchase
+  CUSTOM // User-defined
+}
+
+enum ConversionValueType {
+  COUNT // Just count occurrences
+  REVENUE // Track monetary value
+  SCORE // Track a custom score/value
+}
+
+enum AttributionModel {
+  FIRST_TOUCH // All credit to first touch point
+  LAST_TOUCH // All credit to last touch point
+  LINEAR // Equal credit across all touch points
+  TIME_DECAY // More credit to recent touch points
+  POSITION_BASED // More credit to first and last touch points (U-shaped)
+  CUSTOM // Custom-weighted model
+}
+
+// AI-Powered Content Intelligence Models
+model ContentAnalysis {
+  id              String   @id @default(cuid())
+  type            String // SENTIMENT, SUBJECT_LINE, CONTENT_SCORE
+  contentType     String // EMAIL_SUBJECT, EMAIL_BODY, SMS, WHATSAPP, etc.
+  originalContent String   @db.Text
+  result          String   @db.Text // JSON string with analysis results
+  createdAt       DateTime @default(now())
+  userId          String?
+
+  // Relations
+  user User? @relation("ContentAnalysisCreator", fields: [userId], references: [id])
+}
+
+model ContentRecommendation {
+  id               String    @id @default(cuid())
+  type             String // CLARITY, ENGAGEMENT, LENGTH, TONE, CALL_TO_ACTION, PERSONALIZATION
+  entityType       String // EMAIL_CAMPAIGN, SMS_CAMPAIGN, etc.
+  entityId         String
+  originalContent  String    @db.Text
+  suggestedContent String    @db.Text
+  reason           String
+  impactScore      Float // 0 to 1
+  isApplied        Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  appliedAt        DateTime?
+  userId           String?
+
+  // Relations
+  user User? @relation("ContentRecommendationUser", fields: [userId], references: [id])
+}
+
+model SubjectLineTest {
+  id              String    @id @default(cuid())
+  campaignId      String
+  originalSubject String
+  variants        String    @db.Text // JSON string with variant subject lines
+  status          String // DRAFT, RUNNING, COMPLETED
+  winnerVariantId String?
+  createdAt       DateTime  @default(now())
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdById     String
+
+  // Relations
+  createdBy User                    @relation("SubjectLineTestCreator", fields: [createdById], references: [id])
+  results   SubjectLineTestResult[]
+
+  @@index([campaignId])
+}
+
+model SubjectLineTestResult {
+  id        String @id @default(cuid())
+  testId    String
+  variantId String
+  opens     Int    @default(0)
+  clicks    Int    @default(0)
+  sent      Int    @default(0)
+  openRate  Float  @default(0)
+  clickRate Float  @default(0)
+
+  // Relations
+  test SubjectLineTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, variantId])
+}
+
+model SentimentAnalysis {
+  id         String   @id @default(cuid())
+  entityType String // EMAIL_CAMPAIGN, SMS_CAMPAIGN, etc.
+  entityId   String
+  content    String   @db.Text
+  score      Float // -1 to 1
+  positive   String // JSON string with positive aspects
+  negative   String // JSON string with negative aspects
+  emotions   String // JSON string with emotional scores
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model ContentPersonalization {
+  id                  String   @id @default(cuid())
+  campaignId          String
+  contactId           String
+  originalContent     String   @db.Text
+  personalizedContent String   @db.Text
+  replacements        String   @db.Text // JSON string with replacement details
+  createdAt           DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([contactId])
+}
+
+// Predictive Analytics Models
+model PredictionModel {
+  id          String              @id @default(cuid())
+  name        String
+  type        PredictionModelType
+  description String?
+  algorithm   String // Type of algorithm used (RandomForest, NeuralNetwork, etc.)
+  features    String // JSON array of features used in the model
+  metrics     String? // JSON object with model performance metrics
+  version     String // Model version identifier
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  predictions           Prediction[]
+  behavioralPredictions BehavioralPrediction[]
+}
+
+model Prediction {
+  id             String              @id @default(cuid())
+  modelId        String
+  entityType     String // "contact", "campaign", etc.
+  entityId       String
+  predictionType PredictionModelType
+  value          Float // The predicted value (probability, score, etc.)
+  confidence     Float // Confidence level of prediction (0-1)
+  features       String? // JSON object with features used for this specific prediction
+  explanation    String? // Explanation of the prediction factors
+  createdAt      DateTime            @default(now())
+
+  // Relations
+  model PredictionModel @relation(fields: [modelId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([predictionType])
+}
+
+model ChurnPrediction {
+  id             String         @id @default(cuid())
+  contactId      String
+  score          Float // Probability of churning (0-1)
+  riskLevel      ChurnRiskLevel
+  topFactors     String // JSON array of factors contributing to churn risk
+  nextActionDate DateTime? // When to take action
+  createdAt      DateTime       @default(now())
+
+  @@index([contactId])
+  @@index([riskLevel])
+}
+
+model LifetimeValuePrediction {
+  id              String   @id @default(cuid())
+  contactId       String
+  predictedValue  Float // Monetary predicted value
+  confidenceLevel Float // Confidence of prediction (0-1)
+  timeframe       Int // Months in the future for prediction
+  segments        String? // JSON array of value segments
+  createdAt       DateTime @default(now())
+
+  @@index([contactId])
+}
+
+model CampaignPerformancePrediction {
+  id             String   @id @default(cuid())
+  campaignId     String
+  openRate       Float? // Predicted open rate
+  clickRate      Float? // Predicted click rate
+  conversionRate Float? // Predicted conversion rate
+  revenue        Float? // Predicted revenue
+  factors        String // JSON object with influencing factors
+  createdAt      DateTime @default(now())
+
+  @@index([campaignId])
+}
+
+model OptimalSendTime {
+  id              String   @id @default(cuid())
+  contactId       String
+  channelType     String // "email", "sms", "push", etc.
+  dayOfWeek       Int // 0-6 (Sunday-Saturday)
+  hourOfDay       Int // 0-23
+  probability     Float // Engagement probability (0-1)
+  confidenceLevel Float // Confidence level (0-1)
+  lastUpdated     DateTime @updatedAt
+
+  @@unique([contactId, channelType, dayOfWeek, hourOfDay])
+  @@index([contactId, channelType])
+}
+
+enum PredictionModelType {
+  CHURN
+  LTV
+  CAMPAIGN_PERFORMANCE
+  SEND_TIME
+  OPEN_RATE
+  CLICK_RATE
+  CONVERSION_RATE
+}
+
+enum ChurnRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+// Customer Journey Mapping Models
+model Journey {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy       User             @relation("JourneyCreator", fields: [createdById], references: [id])
+  stages          JourneyStage[]
+  metrics         JourneyMetric[]
+  contactJourneys ContactJourney[]
+}
+
+model JourneyStage {
+  id               String   @id @default(cuid())
+  journeyId        String
+  name             String
+  description      String?
+  order            Int // Position in journey sequence
+  expectedDuration Int? // Expected time to pass through in hours
+  conversionGoal   Float? // Target conversion % to next stage
+  isEntryPoint     Boolean  @default(false)
+  isExitPoint      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  journey             Journey               @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  transitions         JourneyTransition[]   @relation("FromStage")
+  incomingTransitions JourneyTransition[]   @relation("ToStage")
+  contactStages       ContactJourneyStage[]
+  metrics             JourneyStageMetric[]
+}
+
+model JourneyTransition {
+  id             String                @id @default(cuid())
+  fromStageId    String
+  toStageId      String
+  name           String?
+  description    String?
+  conditions     String? // JSON string with conditions for transition
+  triggerType    TransitionTriggerType
+  triggerDetails String? // JSON string with trigger specifics
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  // Relations
+  fromStage          JourneyStage               @relation("FromStage", fields: [fromStageId], references: [id], onDelete: Cascade)
+  toStage            JourneyStage               @relation("ToStage", fields: [toStageId], references: [id], onDelete: Cascade)
+  contactTransitions ContactJourneyTransition[]
+
+  @@unique([fromStageId, toStageId])
+}
+
+model ContactJourney {
+  id             String        @id @default(cuid())
+  journeyId      String
+  contactId      String
+  status         JourneyStatus @default(ACTIVE)
+  startedAt      DateTime      @default(now())
+  completedAt    DateTime?
+  currentStageId String?
+
+  // Relations
+  journey     Journey                    @relation(fields: [journeyId], references: [id])
+  contact     Contact                    @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  stages      ContactJourneyStage[]
+  transitions ContactJourneyTransition[]
+
+  @@index([journeyId, contactId])
+  @@index([status])
+}
+
+model ContactJourneyStage {
+  id               String    @id @default(cuid())
+  contactJourneyId String
+  stageId          String
+  enteredAt        DateTime  @default(now())
+  exitedAt         DateTime?
+  durationSeconds  Int? // Time spent in stage
+
+  // Relations
+  contactJourney ContactJourney @relation(fields: [contactJourneyId], references: [id], onDelete: Cascade)
+  stage          JourneyStage   @relation(fields: [stageId], references: [id])
+
+  @@index([contactJourneyId])
+  @@index([stageId, enteredAt])
+}
+
+model ContactJourneyTransition {
+  id               String   @id @default(cuid())
+  contactJourneyId String
+  transitionId     String
+  timestamp        DateTime @default(now())
+  fromStageId      String
+  toStageId        String
+  triggerSource    String? // Event that triggered the transition
+
+  // Relations
+  contactJourney ContactJourney    @relation(fields: [contactJourneyId], references: [id], onDelete: Cascade)
+  transition     JourneyTransition @relation(fields: [transitionId], references: [id])
+
+  @@index([contactJourneyId])
+  @@index([transitionId])
+}
+
+model JourneyMetric {
+  id              String                @id @default(cuid())
+  journeyId       String
+  name            String
+  description     String?
+  metricType      JourneyMetricType
+  targetValue     Float?
+  aggregationType MetricAggregationType @default(SUM)
+  formula         String? // Custom formula to calculate the metric
+  isSuccess       Boolean               @default(false) // Is this a success metric for the journey
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  // Relations
+  journey      Journey              @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  stageMetrics JourneyStageMetric[]
+}
+
+model JourneyStageMetric {
+  id          String   @id @default(cuid())
+  stageId     String
+  metricId    String
+  targetValue Float? // Stage-specific target that overrides journey level
+  actualValue Float? // Current value
+  lastUpdated DateTime @updatedAt
+
+  // Relations
+  stage  JourneyStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  metric JourneyMetric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, metricId])
+}
+
+model JourneyAnalytics {
+  id                String   @id @default(cuid())
+  journeyId         String
+  date              DateTime
+  totalContacts     Int
+  activeContacts    Int
+  completedContacts Int
+  droppedContacts   Int
+  conversionRate    Float
+  averageDuration   Int // Average journey duration in hours
+  stageData         String // JSON with stage-level analytics
+
+  @@unique([journeyId, date])
+}
+
+enum JourneyStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+  PAUSED
+}
+
+enum TransitionTriggerType {
+  AUTOMATIC // Time-based or system triggered
+  EVENT // Triggered by an event (email open, click, etc.)
+  CONVERSION // Triggered by a conversion event
+  CONDITION // Triggered when conditions are met
+  MANUAL // Manually triggered by an operator
+}
+
+enum JourneyMetricType {
+  CONVERSION_RATE
+  CONTACTS_COUNT
+  DURATION
+  REVENUE
+  CUSTOM
+}
+
+enum MetricAggregationType {
+  SUM
+  AVERAGE
+  COUNT
+  MIN
+  MAX
+}
+
+// Task management models
+model Task {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  status         String    @default("TODO")
+  priority       String    @default("MEDIUM")
+  dueDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  creatorId      String
+  assigneeId     String?
+  contactId      String?
+  segmentId      String?
+  campaignId     String?
+  regionId       String?
+  organizationId String? // Made optional for safe migration
+
+  // Relations
+  creator      User             @relation(name: "TaskCreator", fields: [creatorId], references: [id])
+  assignee     User?            @relation(name: "TaskAssignee", fields: [assigneeId], references: [id])
+  campaign     EmailCampaign?   @relation(fields: [campaignId], references: [id])
+  organization Organization?    @relation(fields: [organizationId], references: [id])
+  dependencies TaskDependency[] @relation("DependentTask")
+  dependsOn    TaskDependency[] @relation("PrerequisiteTask")
+  comments     TaskComment[]
+
+  @@index([organizationId])
+}
+
+model TaskDependency {
+  id              String   @id @default(cuid())
+  taskId          String
+  dependsOnTaskId String
+  createdAt       DateTime @default(now())
+
+  // Relations
+  task          Task @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTask Task @relation("PrerequisiteTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+}
+
+model TaskComment {
+  id          String   @id @default(cuid())
+  taskId      String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+}
+
+// AI Intelligence Models
+model AI_ContentAnalysis {
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  supremeScore Int      @default(0)
+  sentiment    Float?
+  readability  Int?
+  engagement   Int?
+  analysis     String? // JSON
+  tags         String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdById  String
+
+  // Relations
+  createdBy User @relation("UserToContentAnalysis", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model AI_CustomerSegment {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  criteria      String? // JSON
+  customerCount Int      @default(0)
+  churnRisk     Float    @default(0)
+  lifetimeValue Float    @default(0)
+  tags          String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+
+  // Relations
+  createdBy User @relation("UserToCustomerSegment", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model AI_ChatHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  sessionId  String?
+  question   String
+  answer     String
+  context    String? // JSON
+  confidence Float    @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation("UserToChatHistory", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AI_Tool {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  config      String? // JSON
+  usage       String? // JSON
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy User @relation("UserToAITool", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model AIMemory {
+  id               String   @id @default(cuid())
+  userId           String
+  organizationId   String
+  type             String
+  content          String
+  metadata         String?  // JSON
+  importance       Float    @default(0.5)
+  tags             String[] @default([])
+  embedding        Float[]  @default([])
+  sessionId        String?
+  relatedMemories  String[] @default([])
+  accessCount      Int      @default(0)
+  lastAccessed     DateTime @default(now())
+  expiresAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  user         User @relation("UserToAIMemory", fields: [userId], references: [id], onDelete: Cascade)
+  organization User @relation("OrgToAIMemory", fields: [organizationId], references: [id], onDelete: Cascade)
+  conversationMessages AIConversationMessage[] @relation("ConversationToMemory")
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([sessionId])
+  @@index([importance])
+  @@index([lastAccessed])
+  @@index([expiresAt])
+  @@map("ai_memory")
+}
+
+model AIConversationMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // 'user' | 'assistant' | 'system'
+  content   String
+  metadata  String?  // JSON
+  memoryId  String?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  memory AIMemory? @relation("ConversationToMemory", fields: [memoryId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([timestamp])
+  @@map("ai_conversation_message")
+}
+
+// LeadPulse models
+model LeadPulseVisitor {
+  id              String   @id @default(cuid())
+  fingerprint     String   @unique
+  ipAddress       String?
+  userAgent       String?
+  referrer        String?
+  firstVisit      DateTime @default(now())
+  lastVisit       DateTime @updatedAt
+  totalVisits     Int      @default(1)
+  isActive        Boolean  @default(true)
+  engagementScore Int      @default(0)
+  engagementLevel String?
+
+  // Location data
+  city      String?
+  country   String?
+  region    String?
+  latitude  Float?
+  longitude Float?
+
+  // Device data
+  device  String?
+  browser String?
+  os      String?
+
+  // Metadata
+  metadata Json?
+  score    Int   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  touchpoints     LeadPulseTouchpoint[]
+  formSubmissions LeadPulseFormSubmission[]
+  analytics       LeadPulseAnalytics[]
+  attributions    LeadPulseAttribution[]
+
+  @@index([fingerprint])
+  @@index([lastVisit])
+  @@index([isActive])
+  @@index([lastVisit, isActive])
+  @@index([engagementScore, lastVisit])
+  @@index([country, lastVisit])
+}
+
+model AnonymousVisitor {
+  id              String   @id @default(cuid())
+  fingerprint     String   @unique
+  ipAddress       String?
+  userAgent       String?
+  referrer        String?
+  contactId       String?
+  firstVisit      DateTime @default(now())
+  lastVisit       DateTime @updatedAt
+  totalVisits     Int      @default(1)
+  visitCount      Int      @default(1)
+  isActive        Boolean  @default(true)
+  engagementScore Int      @default(0)
+  score           Int      @default(0)
+
+  // Location data
+  city      String?
+  country   String?
+  region    String?
+  latitude  Float?
+  longitude Float?
+
+  // Relations
+  LeadPulseTouchpoint LeadPulseTouchpoint[]
+  LeadPulseJourney    LeadPulseJourney[]
+  attributions        LeadPulseAttribution[]
+
+  @@index([fingerprint])
+  @@index([lastVisit])
+  @@index([lastVisit, isActive])
+  @@index([engagementScore, lastVisit])
+}
+
+model LeadPulseJourney {
+  id             String    @id @default(cuid())
+  visitorId      String
+  startDate      DateTime
+  lastUpdate     DateTime  @updatedAt
+  stage          String
+  completionDate DateTime?
+  score          Int       @default(0)
+  isCompleted    Boolean   @default(false)
+  source         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  visitor AnonymousVisitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@index([visitorId])
+  @@index([stage])
+}
+
+model LeadPulseTouchpoint {
+  id                 String                  @id @default(cuid())
+  visitorId          String?
+  anonymousVisitorId String?
+  timestamp          DateTime                @default(now())
+  type               LeadPulseTouchpointType
+  url                String?
+  duration           Int? // Duration in milliseconds
+  value              Int                     @default(1) // Engagement value
+  score              Int                     @default(1) // Score value
+  metadata           Json? // Additional data like form fields, click targets, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  visitor                LeadPulseVisitor?                @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  anonymousVisitor       AnonymousVisitor?                @relation(fields: [anonymousVisitorId], references: [id], onDelete: Cascade)
+  attributionTouchpoints LeadPulseAttributionTouchpoint[]
+  campaigns              LeadPulseCampaign[]              @relation("CampaignTouchpoints")
+
+  @@index([visitorId, timestamp])
+  @@index([anonymousVisitorId, timestamp])
+  @@index([type])
+  @@index([timestamp, type])
+  @@index([visitorId, type, timestamp])
+  @@index([type, timestamp, visitorId])
+}
+
+model LeadPulseSegment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  criteria    Json // Segment rules
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LeadPulseInsight {
+  id             String               @id @default(cuid())
+  type           LeadPulseInsightType
+  title          String
+  description    String
+  importance     LeadPulseImportance
+  metric         Json? // Optional metric data
+  recommendation String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+}
+
+enum LeadPulseTouchpointType {
+  PAGEVIEW
+  CLICK
+  FORM_VIEW
+  FORM_START
+  FORM_SUBMIT
+  CONVERSION
+}
+
+enum LeadPulseInsightType {
+  BEHAVIOR
+  PREDICTION
+  OPPORTUNITY
+  TREND
+}
+
+enum LeadPulseImportance {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// LeadPulse Form Builder Models
+model LeadPulseForm {
+  id          String     @id @default(cuid())
+  name        String
+  title       String
+  description String?
+  status      FormStatus @default(DRAFT)
+
+  // Design & Configuration
+  theme    Json? // Colors, fonts, styling
+  layout   FormLayout @default(SINGLE_COLUMN)
+  settings Json? // Form-level settings (notifications, redirects, etc.)
+
+  // Behavior Settings
+  submitButtonText String  @default("Submit")
+  successMessage   String  @default("Thank you for your submission!")
+  errorMessage     String  @default("Something went wrong. Please try again.")
+  redirectUrl      String? // Redirect after successful submission
+
+  // Analytics & Tracking
+  isTrackingEnabled Boolean @default(true)
+  conversionGoal    String? // What conversion event this form tracks
+
+  // Publishing
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  embedCode   String? // Generated embed code for external sites
+  publicUrl   String? // Public form URL
+
+  // Metadata
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  creator     User?                     @relation("FormCreator", fields: [createdBy], references: [id])
+  fields      LeadPulseFormField[]
+  submissions LeadPulseFormSubmission[]
+  analytics   LeadPulseFormAnalytics[]
+
+  @@index([status])
+  @@index([isPublished])
+  @@index([createdBy])
+}
+
+model LeadPulseFormField {
+  id          String        @id @default(cuid())
+  formId      String
+  type        FormFieldType
+  name        String // Field name for data storage
+  label       String // Display label
+  placeholder String?
+  helpText    String?
+
+  // Field Configuration
+  isRequired   Boolean @default(false)
+  isVisible    Boolean @default(true)
+  defaultValue String?
+
+  // Validation Rules
+  validation Json? // Validation rules (min/max length, regex, etc.)
+
+  // Field-specific Options
+  options     Json? // For select, radio, checkbox (array of options)
+  fileTypes   String[] // For file upload fields
+  maxFileSize Int? // Max file size in bytes
+
+  // Layout & Styling
+  order      Int            @default(0)
+  width      FormFieldWidth @default(FULL)
+  cssClasses String? // Custom CSS classes
+
+  // Conditional Logic
+  conditionalLogic Json? // Show/hide based on other field values
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  form           LeadPulseForm             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  submissionData LeadPulseSubmissionData[]
+
+  @@index([formId, order])
+  @@index([type])
+}
+
+model LeadPulseFormSubmission {
+  id        String  @id @default(cuid())
+  formId    String
+  visitorId String? // Link to LeadPulse visitor
+  contactId String? // Link to created/updated contact
+
+  // Submission Context
+  submittedAt DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+
+  // Processing Status
+  status      SubmissionStatus @default(PENDING)
+  processedAt DateTime?
+
+  // Lead Scoring
+  score   Int         @default(0)
+  quality LeadQuality @default(UNKNOWN)
+
+  // Metadata
+  metadata Json? // Additional tracking data
+
+  // Relations
+  form    LeadPulseForm             @relation(fields: [formId], references: [id], onDelete: Cascade)
+  visitor LeadPulseVisitor?         @relation(fields: [visitorId], references: [id])
+  contact Contact?                  @relation(fields: [contactId], references: [id])
+  data    LeadPulseSubmissionData[]
+
+  @@index([formId, submittedAt])
+  @@index([visitorId])
+  @@index([contactId])
+  @@index([status])
+}
+
+model LeadPulseSubmissionData {
+  id           String        @id @default(cuid())
+  submissionId String
+  fieldId      String
+  fieldName    String // Field name for easy querying
+  fieldType    FormFieldType
+  value        String? // Text value
+  fileUrl      String? // For file uploads
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  submission LeadPulseFormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  field      LeadPulseFormField      @relation(fields: [fieldId], references: [id])
+
+  @@index([submissionId])
+  @@index([fieldId])
+  @@index([fieldName])
+}
+
+model LeadPulseFormAnalytics {
+  id     String   @id @default(cuid())
+  formId String
+  date   DateTime @db.Date
+
+  // View Metrics
+  views       Int @default(0)
+  uniqueViews Int @default(0)
+
+  // Interaction Metrics
+  fieldInteractions Int @default(0)
+  formStarts        Int @default(0)
+
+  // Completion Metrics
+  submissions Int @default(0)
+  completions Int @default(0)
+
+  // Conversion Metrics
+  conversionRate  Float @default(0)
+  averageTime     Int? // Average time to complete in seconds
+  abandonmentRate Float @default(0)
+
+  // Field Analytics
+  fieldAnalytics Json? // Per-field interaction and abandonment data
+
+  // Traffic Sources
+  trafficSources Json? // UTM and referrer breakdown
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  form LeadPulseForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, date])
+  @@index([formId])
+  @@index([date])
+}
+
+// Form Builder Enums
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum FormLayout {
+  SINGLE_COLUMN
+  TWO_COLUMN
+  MULTI_STEP
+  FLOATING_LABELS
+}
+
+enum FormFieldType {
+  TEXT
+  EMAIL
+  PHONE
+  NUMBER
+  TEXTAREA
+  SELECT
+  MULTISELECT
+  RADIO
+  CHECKBOX
+  DATE
+  TIME
+  DATETIME
+  FILE
+  HIDDEN
+  HTML
+  DIVIDER
+}
+
+enum FormFieldWidth {
+  QUARTER
+  THIRD
+  HALF
+  TWO_THIRDS
+  THREE_QUARTERS
+  FULL
+}
+
+enum SubmissionStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  SPAM
+  DUPLICATE
+}
+
+enum LeadQuality {
+  UNKNOWN
+  COLD
+  WARM
+  HOT
+  QUALIFIED
+}
+
+// Subscription Plans
+model SubscriptionPlan {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  price          Float
+  currency       String   @default("NGN")
+  interval       String   @default("monthly") // monthly, annually
+  features       String // JSON string of features
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  paystackPlanId String? // Paystack plan ID
+
+  // Relations
+  subscriptions Subscription[]
+}
+
+// Subscription model
+model Subscription {
+  id                     String             @id @default(cuid())
+  organizationId         String
+  planId                 String
+  status                 SubscriptionStatus @default(ACTIVE)
+  startDate              DateTime           @default(now())
+  endDate                DateTime?
+  canceledAt             DateTime?
+  paystackSubscriptionId String?
+  paystackCustomerId     String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  // Relations
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id])
+  transactions Transaction[]
+}
+
+// Transaction model
+model Transaction {
+  id                    String            @id @default(cuid())
+  subscriptionId        String
+  amount                Float
+  currency              String
+  status                TransactionStatus @default(PENDING)
+  paystackReference     String            @unique
+  paystackTransactionId String?
+  metadata              String? // JSON string for additional data
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+// Payment Method model
+model PaymentMethod {
+  id                        String            @id @default(cuid())
+  organizationId            String
+  type                      PaymentMethodType
+  last4                     String?
+  expMonth                  Int?
+  expYear                   Int?
+  brand                     String?
+  isDefault                 Boolean           @default(false)
+  paystackAuthorizationCode String?
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  TRIALING
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethodType {
+  CARD
+  BANK
+  USSD
+  BANK_TRANSFER
+  QR
+  MOBILE_MONEY
+}
+
+enum WorkflowExecutionStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  PAUSED
+  CANCELLED
+}
+
+enum StepExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+  SCHEDULED
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // PAGE_VIEW, CLICK, PURCHASE, etc.
+  channel   String // EMAIL, SMS, WHATSAPP, WEB
+  timestamp DateTime @default(now())
+  metadata  Json? // Additional activity details
+  sentiment String? // positive, negative, neutral
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id])
+  purchases    Purchase[]
+  sessions     UserSession[]
+  interactions Interaction[]
+
+  @@index([userId, timestamp])
+  @@index([type])
+}
+
+model Purchase {
+  id         String   @id @default(cuid())
+  activityId String
+  amount     Float
+  productId  String
+  timestamp  DateTime @default(now())
+
+  // Relations
+  activity UserActivity @relation(fields: [activityId], references: [id])
+
+  @@index([activityId])
+}
+
+model Interaction {
+  id         String   @id @default(cuid())
+  activityId String
+  type       String // click, scroll, form_submit, etc.
+  timestamp  DateTime @default(now())
+  metadata   Json? // Additional interaction details
+
+  // Relations
+  activity UserActivity @relation(fields: [activityId], references: [id])
+
+  @@index([activityId])
+}
+
+model BehavioralPrediction {
+  id                 String   @id @default(cuid())
+  userId             String
+  modelId            String
+  predictions        String   @db.Text // JSON string with all predictions
+  segments           String   @db.Text // JSON array of segments
+  confidenceScores   String   @db.Text // JSON object with confidence scores
+  explanatoryFactors String   @db.Text // JSON array of factors
+  features           String   @db.Text // JSON object with input features
+  createdAt          DateTime @default(now())
+
+  // Relations
+  model PredictionModel @relation(fields: [modelId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([modelId])
+}
+
+model BehavioralSegment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  criteria    String   @db.Text // JSON object with segmentation criteria
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name])
+}
+
+// LeadPulse Alert System
+model LeadPulseAlert {
+  id          String    @id @default(cuid())
+  type        String // alert type (high_value_visitor, form_abandonment, etc.)
+  title       String
+  message     String
+  priority    String // high, medium, low, info
+  status      String    @default("ACTIVE") // ACTIVE, DISMISSED, RESOLVED
+  metadata    Json? // Additional alert data
+  createdAt   DateTime  @default(now())
+  triggeredAt DateTime  @default(now())
+  dismissedAt DateTime?
+  resolvedAt  DateTime?
+
+  @@index([type, status])
+  @@index([priority, createdAt])
+}
+
+// LeadPulse Page Views
+model LeadPulsePageView {
+  id         String   @id @default(cuid())
+  visitorId  String // Can be fingerprint or visitor ID
+  url        String
+  title      String?
+  timestamp  DateTime @default(now())
+  timeOnPage Int? // Time spent on page in seconds
+  metadata   Json? // Additional page view data
+
+  @@index([visitorId, timestamp])
+  @@index([url])
+}
+
+// Advanced Analytics Model for Scroll Depth and Click Heat Mapping
+model LeadPulseAnalytics {
+  id           String    @id @default(cuid())
+  sessionId    String    @unique
+  visitorId    String
+  page         String
+  startTime    DateTime
+  endTime      DateTime?
+  userAgent    String?
+  viewport     Json? // { width, height }
+  referrer     String?
+  isNewVisitor Boolean   @default(false)
+
+  // Scroll Analytics
+  scrollAnalytics Json? // ScrollAnalytics object
+
+  // Click Heatmap Data
+  clickHeatmap Json? // ClickHeatmapData object
+
+  // Behavioral Insights
+  behavioralInsights    Json? // BehavioralInsights object
+  engagementScore       Int      @default(0)
+  userIntent            String   @default("browse") // research, purchase, browse, support
+  conversionProbability Int      @default(0)
+  frustrationSignals    String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to visitor
+  visitor LeadPulseVisitor @relation(fields: [visitorId], references: [fingerprint])
+
+  @@index([sessionId])
+  @@index([visitorId, startTime])
+  @@index([page, startTime])
+  @@index([engagementScore])
+  @@index([userIntent])
+  @@index([conversionProbability])
+}
+
+// Onboarding Configuration Models
+model SMSProvider {
+  id                 String   @id @default(cuid())
+  organizationId     String   @unique
+  provider           String // africastalking, twilio, termii, nexmo
+  credentials        Json // Encrypted provider credentials
+  senderId           String? // Sender ID for providers that require it
+  isActive           Boolean  @default(false)
+  verificationStatus String   @default("pending") // pending, verified, failed
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model WhatsAppBusinessConfig {
+  id                 String   @id @default(cuid())
+  organizationId     String   @unique
+  businessAccountId  String
+  phoneNumberId      String
+  accessToken        String // Encrypted access token
+  webhookUrl         String
+  verifyToken        String
+  phoneNumber        String? // The actual phone number
+  displayName        String? // Business display name
+  isActive           Boolean  @default(false)
+  verificationStatus String   @default("pending") // pending, verified, failed
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model EmailProvider {
+  id                String   @id @default(cuid())
+  organizationId    String   @unique
+  providerType      String   // mailgun, sendgrid, smtp, postmark, ses
+  name              String   // User-friendly name for the provider
+  apiKey            String?  // Encrypted API key for API-based providers
+  apiSecret         String?  // Encrypted API secret if needed
+  domain            String?  // Sending domain for providers that require it
+  
+  // SMTP Configuration
+  smtpHost          String?
+  smtpPort          Int?
+  smtpUsername      String?
+  smtpPassword      String?  // Encrypted
+  smtpSecure        Boolean  @default(true)
+  
+  // Sender Configuration
+  fromEmail         String
+  fromName          String?
+  replyToEmail      String?
+  
+  // Tracking Configuration
+  trackingDomain    String?
+  enableTracking    Boolean  @default(true)
+  
+  // Status and Verification
+  isActive          Boolean  @default(false)
+  verificationStatus String  @default("pending") // pending, verified, failed
+  lastTested        DateTime?
+  testStatus        String? // success, failed, pending
+  
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model EmailDomainConfig {
+  id                 String    @id @default(cuid())
+  organizationId     String    @unique
+  domain             String
+  spfVerified        Boolean   @default(false)
+  dkimVerified       Boolean   @default(false)
+  dmarcVerified      Boolean   @default(false)
+  mxVerified         Boolean   @default(false)
+  verificationStatus String    @default("pending") // pending, partial, verified, failed
+  lastChecked        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Workflow Analytics & Performance Models
+model WorkflowAnalytics {
+  id                  String         @id @default(cuid())
+  workflowId          String
+  dateRange           AnalyticsRange
+  periodStart         DateTime
+  periodEnd           DateTime
+  totalExecutions     Int            @default(0)
+  completedExecutions Int            @default(0)
+  failedExecutions    Int            @default(0)
+  avgCompletionTime   Float          @default(0) // milliseconds
+  completionRate      Float          @default(0) // 0-1
+  errorRate           Float          @default(0) // 0-1
+  mostCommonError     String?
+  performanceScore    Float          @default(0) // 0-1
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Relations
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, dateRange, periodStart])
+  @@index([dateRange, periodStart])
+  @@index([performanceScore])
+}
+
+model WorkflowQueueMetrics {
+  id                String   @id @default(cuid())
+  queueName         String
+  timestamp         DateTime
+  waitingJobs       Int      @default(0)
+  activeJobs        Int      @default(0)
+  completedJobs     Int      @default(0)
+  failedJobs        Int      @default(0)
+  processingRate    Float    @default(0) // jobs per minute
+  avgProcessingTime Float    @default(0) // milliseconds
+  memoryUsageMb     Float    @default(0)
+
+  @@index([queueName, timestamp])
+  @@index([timestamp])
+}
+
+enum AnalyticsRange {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+// Safety & Approval System Models
+model ApprovalRequest {
+  id              String    @id @default(cuid())
+  operationId     String    @unique
+  requesterId     String
+  approvalLevel   String // admin, super_admin, multi_admin
+  operationData   Json // Stores the OperationRequest
+  justification   String
+  status          String    @default("pending") // pending, approved, rejected, expired
+  expiresAt       DateTime
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  requester User  @relation("ApprovalRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  approver  User? @relation("ApprovalApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  @@index([requesterId])
+  @@index([approvedBy])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model SafetyViolation {
+  id          String    @id @default(cuid())
+  userId      String
+  ruleId      String
+  operationId String
+  riskLevel   String // low, medium, high, critical
+  details     Json // Stores operation and assessment details
+  resolved    Boolean   @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resolver User? @relation("ViolationResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([ruleId])
+  @@index([riskLevel])
+  @@index([resolved])
+}
+
+// Unified Messaging Service Models
+model MessagingUsage {
+  id             String   @id @default(cuid())
+  organizationId String
+  channel        String // sms, email, whatsapp
+  messageCount   Int
+  credits        Float
+  provider       String
+  timestamp      DateTime @default(now())
+  campaignId     String?
+  metadata       Json?
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([channel])
+  @@index([timestamp])
+  @@index([provider])
+}
+
+model CreditTransaction {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String // purchase, deduction, refund, bonus
+  amount         Float
+  description    String
+  paymentMethod  String? // paystack, stripe, manual
+  paymentId      String? // Reference to payment processor
+  status         String   @default("completed") // pending, completed, failed
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProviderMetrics {
+  id                  String   @id @default(cuid())
+  provider            String
+  channel             String // sms, email, whatsapp
+  region              String
+  deliveryRate        Float
+  averageDeliveryTime Float // in seconds
+  errorRate           Float
+  totalMessagesSent   Int      @default(0)
+  totalSuccessful     Int      @default(0)
+  totalFailed         Int      @default(0)
+  lastUpdated         DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([provider, channel, region], name: "provider_channel_region")
+  @@index([provider])
+  @@index([channel])
+  @@index([region])
+  @@index([lastUpdated])
+}
+
+// GDPR Automated Compliance Models
+model LeadPulseRetentionRule {
+  id              String   @id @default(cuid())
+  name            String
+  enabled         Boolean  @default(true)
+  dataType        String // visitor, contact, touchpoint, form_submission, consent
+  retentionPeriod Int // days
+  conditions      Json // JSON object with conditions
+  actions         Json // JSON object with actions (delete, anonymize, archive)
+  schedule        Json // JSON object with schedule (frequency, time, timezone)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([dataType])
+  @@index([retentionPeriod])
+}
+
+model LeadPulseComplianceAlert {
+  id         String    @id @default(cuid())
+  type       String // data_retention, consent_expiry, data_breach, access_request, erasure_request
+  severity   String // low, medium, high, critical
+  message    String
+  details    Json?
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+}
+
+model LeadPulseDataSubjectRequest {
+  id                 String    @id @default(cuid())
+  type               String // ACCESS, RECTIFICATION, ERASURE, RESTRICTION, PORTABILITY, OBJECTION
+  email              String
+  requestDetails     String?
+  verificationMethod String?
+  status             String    @default("pending") // pending, processing, completed, rejected
+  completedAt        DateTime?
+  completedBy        String?
+  responseData       Json? // For access/portability requests
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([type])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// =================================================================
+// WORKFLOW VERSION CONTROL MODELS
+// =================================================================
+
+enum WorkflowVersionStatus {
+  DRAFT
+  STAGING
+  PRODUCTION
+  ARCHIVED
+}
+
+enum DeploymentStatus {
+  DEPLOYING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model WorkflowVersion {
+  id          String                @id @default(cuid())
+  workflowId  String
+  version     String
+  definition  String // JSON string of workflow definition
+  description String?
+  status      WorkflowVersionStatus @default(DRAFT)
+  metadata    String                @default("{}") // JSON string with additional metadata
+  createdBy   String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @default(now())
+
+  // Relations
+  workflow        Workflow                    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  creator         User                        @relation("CreatedBy", fields: [createdBy], references: [id])
+  fromDeployments WorkflowDeployment[]        @relation("FromVersion")
+  toDeployments   WorkflowDeployment[]        @relation("ToVersion")
+  fromRollbacks   WorkflowRollback[]          @relation("FromVersion")
+  toRollbacks     WorkflowRollback[]          @relation("ToVersion")
+  fromComparisons WorkflowVersionComparison[] @relation("FromVersion")
+  toComparisons   WorkflowVersionComparison[] @relation("ToVersion")
+  parentBranches  WorkflowBranch[]            @relation("ParentVersion")
+  currentBranches WorkflowBranch[]            @relation("CurrentVersion")
+  tags            WorkflowVersionTag[]
+  approvals       WorkflowApproval[]
+
+  @@unique([workflowId, version])
+  @@index([workflowId])
+  @@index([status])
+  @@index([version])
+  @@index([createdAt])
+}
+
+model WorkflowDeployment {
+  id                 String           @id @default(cuid())
+  workflowId         String
+  fromVersionId      String?
+  toVersionId        String
+  status             DeploymentStatus @default(DEPLOYING)
+  deployedBy         String
+  deploymentNotes    String?
+  affectedExecutions Int              @default(0)
+  startedAt          DateTime         @default(now())
+  completedAt        DateTime?
+  error              String?
+  rollbackPlan       String? // JSON string
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now())
+
+  // Relations
+  workflow    Workflow           @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  fromVersion WorkflowVersion?   @relation("FromVersion", fields: [fromVersionId], references: [id])
+  toVersion   WorkflowVersion    @relation("ToVersion", fields: [toVersionId], references: [id])
+  deployer    User               @relation("DeployedBy", fields: [deployedBy], references: [id])
+  rollbacks   WorkflowRollback[]
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model WorkflowRollback {
+  id            String   @id @default(cuid())
+  workflowId    String
+  fromVersionId String
+  toVersionId   String
+  reason        String
+  rolledBackBy  String
+  deploymentId  String?
+  timestamp     DateTime @default(now())
+  metadata      String?  @default("{}") // JSON string
+
+  // Relations
+  workflow       Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  fromVersion    WorkflowVersion     @relation("FromVersion", fields: [fromVersionId], references: [id])
+  toVersion      WorkflowVersion     @relation("ToVersion", fields: [toVersionId], references: [id])
+  rolledBackUser User                @relation("RolledBackBy", fields: [rolledBackBy], references: [id])
+  deployment     WorkflowDeployment? @relation(fields: [deploymentId], references: [id])
+
+  @@index([workflowId])
+  @@index([timestamp])
+}
+
+model WorkflowVersionComparison {
+  id             String   @id @default(cuid())
+  workflowId     String
+  fromVersionId  String
+  toVersionId    String
+  comparison     String // JSON string with comparison details
+  riskAssessment String // JSON string with risk assessment
+  createdAt      DateTime @default(now())
+
+  // Relations
+  workflow    Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  fromVersion WorkflowVersion @relation("FromVersion", fields: [fromVersionId], references: [id], onDelete: Cascade)
+  toVersion   WorkflowVersion @relation("ToVersion", fields: [toVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([fromVersionId, toVersionId])
+  @@index([workflowId])
+}
+
+model WorkflowBranch {
+  id               String   @id @default(cuid())
+  workflowId       String
+  name             String
+  description      String?
+  parentVersionId  String?
+  currentVersionId String?
+  isActive         Boolean  @default(true)
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+
+  // Relations
+  workflow       Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  parentVersion  WorkflowVersion? @relation("ParentVersion", fields: [parentVersionId], references: [id])
+  currentVersion WorkflowVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  creator        User             @relation("BranchCreator", fields: [createdBy], references: [id])
+
+  @@unique([workflowId, name])
+  @@index([workflowId])
+  @@index([isActive])
+}
+
+model WorkflowVersionTag {
+  id        String   @id @default(cuid())
+  versionId String
+  tag       String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  // Relations
+  version WorkflowVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  creator User            @relation("TagCreator", fields: [createdBy], references: [id])
+
+  @@unique([versionId, tag])
+  @@index([versionId])
+  @@index([tag])
+}
+
+model WorkflowApproval {
+  id             String    @id @default(cuid())
+  versionId      String
+  approverUserId String
+  status         String    @default("pending") // pending, approved, rejected
+  comments       String?
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  version  WorkflowVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  approver User            @relation("WorkflowApprover", fields: [approverUserId], references: [id])
+
+  @@index([versionId])
+  @@index([status])
+}
+
+// =================================================================
+// WORKFLOW TEMPLATE MARKETPLACE MODELS
+// =================================================================
+
+enum WorkflowTemplateCategory {
+  WELCOME_SERIES
+  ABANDONED_CART
+  LEAD_NURTURING
+  CUSTOMER_RETENTION
+  RE_ENGAGEMENT
+  EVENT_BASED
+  BIRTHDAY_CAMPAIGNS
+  PRODUCT_LAUNCH
+  EDUCATIONAL_SERIES
+  FEEDBACK_COLLECTION
+  REFERRAL_PROGRAMS
+  SEASONAL_CAMPAIGNS
+  TRANSACTIONAL
+  FINTECH_ONBOARDING
+  PAYMENT_REMINDERS
+  KYC_VERIFICATION
+  LOAN_APPLICATION
+  SAVINGS_GOALS
+  INVESTMENT_ALERTS
+  CUSTOM
+}
+
+enum WorkflowTemplateStatus {
+  DRAFT
+  PUBLISHED
+  FEATURED
+  DEPRECATED
+  PRIVATE
+}
+
+enum WorkflowTemplateComplexity {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+model WorkflowTemplate {
+  id          String                     @id @default(cuid())
+  name        String
+  description String
+  category    WorkflowTemplateCategory
+  status      WorkflowTemplateStatus     @default(DRAFT)
+  complexity  WorkflowTemplateComplexity @default(BEGINNER)
+
+  // Template definition and metadata
+  definition         String // JSON string of workflow definition
+  thumbnail          String? // Template thumbnail/preview image URL
+  tags               String[] // Array of tags for searchability
+  industry           String[] // Target industries (fintech, ecommerce, etc.)
+  useCase            String // Primary use case description
+  estimatedSetupTime Int      @default(10) // Minutes to set up
+
+  // Template features and requirements
+  features     String[] // List of key features
+  requirements Json? // JSON object with requirements (integrations, etc.)
+  variables    Json? // Template variables that can be customized
+  triggerTypes String[] // Supported trigger types
+
+  // Metrics and analytics
+  usageCount    Int    @default(0)
+  rating        Float? @default(0)
+  ratingCount   Int    @default(0)
+  downloadCount Int    @default(0)
+
+  // Marketplace metadata
+  isFeatured Boolean @default(false)
+  isPremium  Boolean @default(false)
+  price      Float?  @default(0) // 0 for free templates
+  authorName String? // Template author/company name
+  authorUrl  String? // Author website or profile URL
+
+  // Versioning
+  version   String   @default("1.0.0")
+  changelog String[] // Version changelog
+
+  // Publishing information
+  publishedAt    DateTime?
+  lastModifiedAt DateTime  @default(now())
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  creator                   User                           @relation("TemplateCreator", fields: [createdBy], references: [id])
+  installations             WorkflowTemplateInstallation[]
+  reviews                   WorkflowTemplateReview[]
+  collections               WorkflowTemplateCollection[]   @relation("CollectionTemplates")
+  categories                WorkflowTemplateSubcategory[]
+  WorkflowTemplateAnalytics WorkflowTemplateAnalytics[]
+
+  @@index([category, status])
+  @@index([status, isFeatured])
+  @@index([complexity])
+  @@index([usageCount])
+  @@index([rating])
+  @@index([publishedAt])
+  @@index([createdBy])
+}
+
+model WorkflowTemplateSubcategory {
+  id          String  @id @default(cuid())
+  templateId  String
+  name        String
+  description String?
+  sortOrder   Int     @default(0)
+
+  // Relations
+  template WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, sortOrder])
+}
+
+model WorkflowTemplateInstallation {
+  id               String   @id @default(cuid())
+  templateId       String
+  workflowId       String
+  userId           String
+  installationType String   @default("clone") // clone, reference, custom
+  customizations   Json? // JSON object with user customizations
+  installedAt      DateTime @default(now())
+  isActive         Boolean  @default(true)
+
+  // Relations
+  template WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  workflow Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user     User             @relation("TemplateInstaller", fields: [userId], references: [id])
+
+  @@unique([templateId, workflowId])
+  @@index([userId, installedAt])
+  @@index([templateId])
+}
+
+model WorkflowTemplateReview {
+  id           String   @id @default(cuid())
+  templateId   String
+  userId       String
+  rating       Int // 1-5 stars
+  comment      String?
+  isVerified   Boolean  @default(false) // Verified purchase/usage
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  template WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  reviewer User             @relation("TemplateReviewer", fields: [userId], references: [id])
+
+  @@unique([templateId, userId])
+  @@index([templateId, rating])
+  @@index([userId])
+}
+
+model WorkflowTemplateCollection {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  slug        String   @unique
+  isPublic    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  thumbnail   String? // Collection thumbnail image URL
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator   User               @relation("CollectionCreator", fields: [createdBy], references: [id])
+  templates WorkflowTemplate[] @relation("CollectionTemplates")
+
+  @@index([isPublic, isFeatured])
+  @@index([createdBy])
+}
+
+model WorkflowTemplateAnalytics {
+  id         String   @id @default(cuid())
+  templateId String
+  eventType  String // view, download, install, rate, search
+  userId     String?
+  metadata   Json? // Additional event metadata
+  timestamp  DateTime @default(now())
+  ipAddress  String?
+  userAgent  String?
+
+  // Relations
+  template WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user     User?            @relation("TemplateAnalytics", fields: [userId], references: [id])
+
+  @@index([templateId, eventType, timestamp])
+  @@index([userId, timestamp])
+  @@index([eventType, timestamp])
+}
+
+// =================================================================
+// WORKFLOW COST TRACKING & BUDGET MANAGEMENT MODELS
+// =================================================================
+
+enum CostType {
+  EMAIL_SEND
+  SMS_SEND
+  WHATSAPP_SEND
+  API_CALL
+  WEBHOOK_CALL
+  DATA_STORAGE
+  COMPUTE_TIME
+  EXTERNAL_SERVICE
+  CUSTOM
+}
+
+enum BudgetPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+enum AlertType {
+  BUDGET_THRESHOLD
+  COST_SPIKE
+  BUDGET_EXCEEDED
+  COST_PROJECTION
+  UNUSUAL_USAGE
+}
+
+// Compliance Enums for African Fintech Regulations
+enum ComplianceCategory {
+  DATA_PROTECTION
+  CONSENT_MANAGEMENT
+  COMMUNICATION_LIMITS
+  FINANCIAL_REGULATIONS
+  ANTI_MONEY_LAUNDERING
+  KNOW_YOUR_CUSTOMER
+  REPORTING_REQUIREMENTS
+  CROSS_BORDER_TRANSFERS
+  MARKET_CONDUCT
+  CONSUMER_PROTECTION
+}
+
+enum ComplianceSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplianceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLIANT
+  NON_COMPLIANT
+  REQUIRES_REVIEW
+  FAILED
+}
+
+enum ComplianceRemediationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NOT_REQUIRED
+}
+
+enum ViolationType {
+  CONSENT_VIOLATION
+  DATA_RETENTION_VIOLATION
+  COMMUNICATION_FREQUENCY_VIOLATION
+  UNAUTHORIZED_CROSS_BORDER_TRANSFER
+  MISSING_OPT_OUT_MECHANISM
+  INADEQUATE_DATA_PROTECTION
+  IMPROPER_CONSENT_COLLECTION
+  MARKETING_HOUR_VIOLATION
+  INSUFFICIENT_DOCUMENTATION
+  REGULATORY_REPORTING_FAILURE
+}
+
+enum ComplianceRiskLevel {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+  CRITICAL
+}
+
+enum ViolationStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_REMEDIATION
+  RESOLVED
+  CLOSED
+  ESCALATED
+}
+
+enum ComplianceReportType {
+  DAILY_SUMMARY
+  WEEKLY_DIGEST
+  MONTHLY_REPORT
+  QUARTERLY_ASSESSMENT
+  ANNUAL_REVIEW
+  INCIDENT_REPORT
+  REGULATORY_FILING
+  AUDIT_REPORT
+}
+
+enum ReportPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+model WorkflowCostTracking {
+  id         String @id @default(cuid())
+  workflowId String @unique
+
+  // Current period costs
+  currentPeriodCost Float @default(0)
+  lastPeriodCost    Float @default(0)
+  totalCost         Float @default(0)
+
+  // Cost breakdown by type
+  emailCosts    Float @default(0)
+  smsCosts      Float @default(0)
+  whatsappCosts Float @default(0)
+  apiCosts      Float @default(0)
+  webhookCosts  Float @default(0)
+  storageCosts  Float @default(0)
+  computeCosts  Float @default(0)
+  externalCosts Float @default(0)
+
+  // Volume metrics
+  totalExecutions Int @default(0)
+  emailsSent      Int @default(0)
+  smsSent         Int @default(0)
+  whatsappSent    Int @default(0)
+  apiCalls        Int @default(0)
+  webhookCalls    Int @default(0)
+
+  // Cost efficiency metrics
+  costPerExecution  Float @default(0)
+  costPerContact    Float @default(0)
+  costPerConversion Float @default(0)
+
+  // Tracking metadata
+  lastCalculatedAt DateTime  @default(now())
+  periodStartDate  DateTime  @default(now())
+  periodEndDate    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflow    Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  costEntries WorkflowCostEntry[]
+
+  @@index([workflowId])
+  @@index([currentPeriodCost])
+  @@index([lastCalculatedAt])
+}
+
+model WorkflowCostEntry {
+  id             String  @id @default(cuid())
+  workflowId     String
+  costTrackingId String
+  executionId    String?
+
+  costType CostType
+  amount   Float
+  quantity Int      @default(1)
+  unitCost Float
+
+  // Cost details
+  description String?
+  provider    String? // SMS provider, email service, etc.
+  region      String? // For region-specific pricing
+  currency    String  @default("USD")
+
+  // Metadata
+  metadata      Json? // Additional cost details
+  timestamp     DateTime @default(now())
+  billingPeriod String? // For subscription-based costs
+
+  // Relations
+  workflow                Workflow               @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  costTracking            WorkflowCostTracking   @relation(fields: [costTrackingId], references: [id], onDelete: Cascade)
+  execution               WorkflowExecution?     @relation(fields: [executionId], references: [id], onDelete: SetNull)
+  WorkflowExecutionStep   WorkflowExecutionStep? @relation(fields: [workflowExecutionStepId], references: [id])
+  workflowExecutionStepId String?
+
+  @@index([workflowId, timestamp])
+  @@index([costType, timestamp])
+  @@index([executionId])
+  @@index([costTrackingId])
+}
+
+model WorkflowBudget {
+  id         String @id @default(cuid())
+  workflowId String
+
+  name        String
+  description String?
+
+  // Budget settings
+  budgetAmount    Float
+  spentAmount     Float  @default(0)
+  remainingAmount Float
+  currency        String @default("USD")
+
+  // Period settings
+  budgetPeriod BudgetPeriod
+  startDate    DateTime
+  endDate      DateTime
+  autoRenew    Boolean      @default(false)
+
+  // Alert thresholds (percentages)
+  warningThreshold  Float @default(75) // 75% of budget
+  criticalThreshold Float @default(90) // 90% of budget
+
+  // Budget restrictions
+  isActive        Boolean @default(true)
+  pauseOnExceeded Boolean @default(false)
+  maxOverrun      Float? // Maximum allowed overrun
+
+  // Tracking
+  lastAlertSent DateTime?
+  exceededAt    DateTime?
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflow Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  creator  User                @relation("BudgetCreator", fields: [createdBy], references: [id])
+  alerts   WorkflowCostAlert[]
+
+  @@index([workflowId, isActive])
+  @@index([budgetPeriod, startDate])
+  @@index([exceededAt])
+}
+
+model WorkflowCostAlert {
+  id         String  @id @default(cuid())
+  workflowId String
+  budgetId   String?
+
+  alertType AlertType
+  severity  String // LOW, MEDIUM, HIGH, CRITICAL
+
+  title   String
+  message String
+
+  // Alert triggers
+  thresholdValue Float? // Threshold that triggered alert
+  currentValue   Float? // Current value when alert triggered
+  projectedValue Float? // Projected value for cost spike alerts
+
+  // Alert metadata
+  metadata   Json?
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+
+  // Notification tracking
+  emailSent   Boolean @default(false)
+  slackSent   Boolean @default(false)
+  webhookSent Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflow Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  budget   WorkflowBudget? @relation(fields: [budgetId], references: [id], onDelete: SetNull)
+  resolver User?           @relation("AlertResolver", fields: [resolvedBy], references: [id])
+
+  @@index([workflowId, alertType])
+  @@index([severity, isResolved])
+  @@index([createdAt])
+}
+
+model WorkflowCostRule {
+  id         String  @id @default(cuid())
+  workflowId String? // null = global rule
+
+  name        String
+  description String?
+
+  // Rule conditions
+  costType CostType? // null = applies to all types
+  provider String? // null = applies to all providers
+  region   String? // null = applies to all regions
+
+  // Pricing rules
+  unitCost Float
+  currency String @default("USD")
+
+  // Volume-based pricing tiers
+  tieredPricing Json? // JSON array of pricing tiers
+
+  // Rule metadata
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  isActive      Boolean   @default(true)
+  priority      Int       @default(0) // Higher priority = applied first
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflow Workflow? @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  creator  User      @relation("CostRuleCreator", fields: [createdBy], references: [id])
+
+  @@index([workflowId, isActive])
+  @@index([costType, isActive])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model WorkflowCostProjection {
+  id         String @id @default(cuid())
+  workflowId String
+
+  // Projection settings
+  projectionPeriod BudgetPeriod
+  projectionDate   DateTime // Date for which projection is made
+
+  // Historical data used
+  basePeriodStart  DateTime
+  basePeriodEnd    DateTime
+  historicalCost   Float
+  historicalVolume Int
+
+  // Projected values
+  projectedCost   Float
+  projectedVolume Int
+  confidenceLevel Float // 0-100 confidence percentage
+
+  // Growth factors
+  growthRate     Float? // Expected growth rate
+  seasonalFactor Float? // Seasonal adjustment factor
+  trendFactor    Float? // Trend adjustment factor
+
+  // Projection breakdown
+  projectedEmailCost    Float @default(0)
+  projectedSmsCost      Float @default(0)
+  projectedWhatsappCost Float @default(0)
+  projectedApiCost      Float @default(0)
+
+  // Metadata
+  calculationMethod String // algorithm used for projection
+  accuracy          Float? // accuracy of previous projections
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId, projectionDate])
+  @@index([projectionPeriod])
+}
+
+// Workflow Compliance Models for African Fintech Regulations
+model WorkflowComplianceRule {
+  id          String             @id @default(cuid())
+  name        String
+  description String?            @db.Text
+  country     String // NG, KE, ZA, GH, EG, etc.
+  regulation  String // CBN, CMA, SARB, BOG, CBE, etc.
+  category    ComplianceCategory
+  severity    ComplianceSeverity
+
+  // Rule definition
+  conditions Json // JSON with conditions to check
+  actions    Json // JSON with required actions
+
+  // Validation settings
+  isActive      Boolean   @default(true)
+  isMandatory   Boolean   @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+
+  // Relations
+  creator    User                          @relation("ComplianceRuleCreator", fields: [createdBy], references: [id])
+  checks     WorkflowComplianceCheck[]
+  violations WorkflowComplianceViolation[]
+
+  @@index([country, isActive])
+  @@index([regulation, isActive])
+  @@index([category, severity])
+}
+
+model WorkflowComplianceCheck {
+  id          String  @id @default(cuid())
+  workflowId  String
+  ruleId      String
+  executionId String? // Optional - check can be for entire workflow or specific execution
+
+  // Check results
+  status      ComplianceStatus
+  checkDate   DateTime         @default(now())
+  isCompliant Boolean
+  riskScore   Float // 0-100 risk assessment score
+
+  // Details
+  findings        Json? // JSON with detailed findings
+  recommendations Json? // JSON with compliance recommendations
+  evidence        Json? // JSON with evidence/data used for check
+
+  // Remediation
+  requiresAction    Boolean                     @default(false)
+  actionRequired    String?                     @db.Text
+  remediationStatus ComplianceRemediationStatus @default(PENDING)
+  remediatedAt      DateTime?
+  remediatedBy      String?
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflow                    Workflow                      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  rule                        WorkflowComplianceRule        @relation(fields: [ruleId], references: [id])
+  remediation                 User?                         @relation("ComplianceRemediation", fields: [remediatedBy], references: [id])
+  WorkflowComplianceViolation WorkflowComplianceViolation[]
+
+  @@index([workflowId, status])
+  @@index([ruleId, isCompliant])
+  @@index([checkDate, status])
+}
+
+model WorkflowComplianceViolation {
+  id          String  @id @default(cuid())
+  workflowId  String
+  ruleId      String
+  executionId String?
+  checkId     String?
+
+  // Violation details
+  violationType ViolationType
+  severity      ComplianceSeverity
+  title         String
+  description   String             @db.Text
+
+  // Impact assessment
+  riskLevel       ComplianceRiskLevel
+  financialImpact Float? // Potential fine or cost
+  businessImpact  String?             @db.Text
+
+  // Resolution
+  status     ViolationStatus @default(OPEN)
+  resolvedAt DateTime?
+  resolvedBy String?
+  resolution String?         @db.Text
+
+  // Notification tracking
+  notificationSent Boolean   @default(false)
+  escalated        Boolean   @default(false)
+  escalatedAt      DateTime?
+
+  // Metadata
+  detectedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  workflow Workflow                 @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  rule     WorkflowComplianceRule   @relation(fields: [ruleId], references: [id])
+  check    WorkflowComplianceCheck? @relation(fields: [checkId], references: [id])
+  resolver User?                    @relation("ViolationResolver", fields: [resolvedBy], references: [id])
+
+  @@index([workflowId, status])
+  @@index([ruleId, severity])
+  @@index([violationType, status])
+  @@index([detectedAt, severity])
+}
+
+model WorkflowComplianceReport {
+  id         String               @id @default(cuid())
+  workflowId String? // null for global reports
+  reportType ComplianceReportType
+  period     ReportPeriod
+
+  // Report date range
+  startDate DateTime
+  endDate   DateTime
+
+  // Summary metrics
+  totalChecks        Int   @default(0)
+  compliantChecks    Int   @default(0)
+  violationsFound    Int   @default(0)
+  highRiskViolations Int   @default(0)
+  overallScore       Float @default(0) // 0-100 compliance score
+
+  // Report data
+  summary         Json // JSON with executive summary
+  findings        Json // JSON with detailed findings
+  recommendations Json // JSON with recommendations
+  trends          Json? // JSON with trend analysis
+
+  // Report metadata
+  generatedAt DateTime  @default(now())
+  generatedBy String
+  format      String    @default("JSON") // JSON, PDF, CSV
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  // Relations
+  workflow  Workflow? @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  generator User      @relation("ComplianceReportGenerator", fields: [generatedBy], references: [id])
+
+  @@index([workflowId, reportType])
+  @@index([period, startDate])
+  @@index([generatedAt, isPublished])
+}
+
+model ComplianceConfiguration {
+  id      String @id @default(cuid())
+  country String @unique // NG, KE, ZA, GH, EG, etc.
+
+  // Regional settings
+  timezone String @default("UTC")
+  currency String @default("USD")
+  language String @default("en")
+
+  // Regulatory settings
+  primaryRegulator String // CBN, CMA, SARB, BOG, CBE
+  regulations      Json // JSON array of applicable regulations
+
+  // Compliance requirements
+  dataRetention         Json // JSON with data retention policies
+  consentRequirements   Json // JSON with consent requirements
+  reportingRequirements Json // JSON with reporting requirements
+
+  // Communication restrictions
+  marketingHours      Json // JSON with allowed marketing hours
+  communicationLimits Json // JSON with communication frequency limits
+  optOutRequirements  Json // JSON with opt-out requirements
+
+  // Data protection
+  encryptionRequired  Boolean @default(true)
+  dataLocalization    Boolean @default(false)
+  crossBorderTransfer Json? // JSON with cross-border transfer rules
+
+  // Metadata
+  lastUpdated DateTime @updatedAt
+  updatedBy   String
+  isActive    Boolean  @default(true)
+
+  // Relations
+  updater User @relation("ComplianceConfigUpdater", fields: [updatedBy], references: [id])
+
+  @@index([country, isActive])
+}
+
+// LeadPulse Offline Capabilities Models
+model LeadPulseOfflineSession {
+  id         String @id @default(cuid())
+  deviceId   String // Unique device identifier
+  sessionId  String // Local session ID from mobile app
+  deviceInfo Json // Device information (OS, version, etc.)
+
+  // Session tracking
+  startTime        DateTime
+  endTime          DateTime?
+  isActive         Boolean   @default(true)
+  connectionStatus String    @default("offline") // offline, online, syncing
+
+  // Data storage
+  eventsCount Int               @default(0)
+  dataSize    Int               @default(0) // Size in bytes
+  lastSyncAt  DateTime?
+  syncStatus  OfflineSyncStatus @default(PENDING)
+
+  // Location tracking (for offline geo intelligence)
+  lastKnownLocation Json? // Lat/lng and other location data
+  timezone          String?
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  events   LeadPulseOfflineEvent[]
+  syncLogs LeadPulseOfflineSyncLog[]
+
+  @@index([deviceId, isActive])
+  @@index([sessionId])
+  @@index([syncStatus, createdAt])
+  @@index([connectionStatus, updatedAt])
+}
+
+model LeadPulseOfflineEvent {
+  id           String @id @default(cuid())
+  sessionId    String
+  localEventId String // Event ID generated on mobile device
+
+  // Event data
+  eventType       String // page_view, click, form_submit, etc.
+  eventData       Json // Complete event payload
+  url             String?
+  timestamp       DateTime // When event occurred (device time)
+  serverTimestamp DateTime? // When event was received by server
+
+  // Sync tracking
+  syncStatus      OfflineEventSyncStatus @default(PENDING)
+  syncAttempts    Int                    @default(0)
+  lastSyncAttempt DateTime?
+  syncError       String?
+
+  // Conflict resolution
+  isConflicted   Boolean   @default(false)
+  conflictReason String?
+  resolvedAt     DateTime?
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  session LeadPulseOfflineSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, localEventId])
+  @@index([syncStatus, timestamp])
+  @@index([eventType, timestamp])
+  @@index([isConflicted])
+}
+
+model LeadPulseOfflineSyncLog {
+  id        String @id @default(cuid())
+  sessionId String
+
+  // Sync operation details
+  syncType  SyncType // UPLOAD, DOWNLOAD, FULL_SYNC
+  status    SyncLogStatus
+  startTime DateTime
+  endTime   DateTime?
+
+  // Sync metrics
+  eventsProcessed Int @default(0)
+  eventsSucceeded Int @default(0)
+  eventsFailed    Int @default(0)
+  dataTransferred Int @default(0) // Bytes
+
+  // Error tracking
+  errors      Json? // Array of error details
+  retryCount  Int       @default(0)
+  nextRetryAt DateTime?
+
+  // Network conditions
+  connectionType String? // wifi, cellular, unknown
+  networkSpeed   String? // slow, fast, unknown
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  session LeadPulseOfflineSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, startTime])
+  @@index([status, startTime])
+  @@index([syncType, status])
+}
+
+model LeadPulseOfflineCache {
+  id        String    @id @default(cuid())
+  deviceId  String
+  cacheKey  String // Unique cache identifier
+  cacheType CacheType // USER_DATA, FORM_CONFIG, ANALYTICS_CONFIG, etc.
+
+  // Cache data
+  data      Json // Cached data payload
+  version   String // Data version for conflict resolution
+  expiresAt DateTime
+
+  // Sync tracking
+  lastUpdated  DateTime
+  isStale      Boolean  @default(false)
+  syncPriority Int      @default(1) // 1=high, 5=low
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([deviceId, cacheKey])
+  @@index([cacheType, expiresAt])
+  @@index([isStale, syncPriority])
+}
+
+model LeadPulseOfflineQueue {
+  id        String    @id @default(cuid())
+  deviceId  String
+  queueType QueueType // EVENT_UPLOAD, DATA_DOWNLOAD, CONFIG_SYNC
+
+  // Queue item data
+  payload    Json // Data to be processed
+  priority   Int  @default(1)
+  retryCount Int  @default(0)
+  maxRetries Int  @default(3)
+
+  // Processing status
+  status        QueueStatus @default(PENDING)
+  processedAt   DateTime?
+  lastError     String?
+  nextProcessAt DateTime? // For delayed processing
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deviceId, status])
+  @@index([queueType, priority])
+  @@index([status, nextProcessAt])
+}
+
+// Offline Sync Enums
+enum OfflineSyncStatus {
+  PENDING
+  SYNCING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+enum OfflineEventSyncStatus {
+  PENDING
+  SYNCING
+  COMPLETED
+  FAILED
+  DUPLICATE
+  CONFLICTED
+}
+
+enum SyncType {
+  UPLOAD
+  DOWNLOAD
+  FULL_SYNC
+  INCREMENTAL_SYNC
+}
+
+enum SyncLogStatus {
+  STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum CacheType {
+  USER_DATA
+  FORM_CONFIG
+  ANALYTICS_CONFIG
+  VISITOR_PROFILE
+  ENGAGEMENT_RULES
+  GEOGRAPHIC_DATA
+}
+
+enum QueueType {
+  EVENT_UPLOAD
+  DATA_DOWNLOAD
+  CONFIG_SYNC
+  ANALYTICS_SYNC
+  PROFILE_SYNC
+}
+
+enum QueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// LeadPulse Attribution Models
+model LeadPulseAttributionConfig {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Attribution window settings
+  viewThroughWindow  Int // Days to attribute view-through conversions
+  clickThroughWindow Int // Days to attribute click-through conversions
+
+  // Attribution model
+  attributionModel AttributionModel
+
+  // Conversion settings
+  conversionEvents Json // Array of events that count as conversions
+  conversionValue  Json? // Value mapping for different conversion types
+
+  // Channel settings
+  channels        Json // Channel configuration and weights
+  touchpointTypes Json // Touchpoint types to include in attribution
+
+  // Advanced settings
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false)
+  crossDevice Boolean @default(false)
+  crossDomain Boolean @default(false)
+
+  // Deduplication settings
+  deduplicationWindow Int                          @default(24) // Hours to deduplicate conversions
+  duplicateHandling   AttributionDuplicateHandling @default(FIRST_TOUCH)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+
+  // Relations
+  creator      User                   @relation("AttributionConfigCreator", fields: [createdBy], references: [id])
+  attributions LeadPulseAttribution[]
+  campaigns    LeadPulseCampaign[]
+
+  @@index([isActive, isDefault])
+  @@index([attributionModel])
+}
+
+model LeadPulseAttribution {
+  id       String @id @default(cuid())
+  configId String
+
+  // Conversion details
+  conversionId    String   @unique
+  conversionType  String // form_submit, purchase, download, etc.
+  conversionValue Float? // Monetary value if applicable
+  conversionData  Json? // Additional conversion metadata
+  conversionTime  DateTime
+
+  // Visitor information
+  visitorId          String?
+  anonymousVisitorId String?
+  sessionId          String?
+
+  // Attribution results
+  attributionModel AttributionModel
+  touchpointsCount Int              @default(0)
+  totalCredit      Float            @default(1.0)
+
+  // Attribution breakdown
+  attributionData Json // Detailed attribution breakdown
+  firstTouch      Json? // First touch attribution data
+  lastTouch       Json? // Last touch attribution data
+
+  // Channel attribution
+  channelBreakdown Json? // Attribution by channel
+  deviceBreakdown  Json? // Attribution by device
+
+  // Journey details
+  journeyDuration Int? // Minutes from first touch to conversion
+  touchpointCount Int  @default(0)
+  uniqueChannels  Int  @default(0)
+
+  // Metadata
+  calculatedAt   DateTime  @default(now())
+  recalculatedAt DateTime?
+  version        Int       @default(1)
+
+  // Relations
+  config           LeadPulseAttributionConfig       @relation(fields: [configId], references: [id])
+  visitor          LeadPulseVisitor?                @relation(fields: [visitorId], references: [id])
+  anonymousVisitor AnonymousVisitor?                @relation(fields: [anonymousVisitorId], references: [id])
+  touchpoints      LeadPulseAttributionTouchpoint[]
+
+  @@index([conversionType, conversionTime])
+  @@index([visitorId, conversionTime])
+  @@index([attributionModel, conversionTime])
+  @@index([calculatedAt, configId])
+}
+
+model LeadPulseAttributionTouchpoint {
+  id            String @id @default(cuid())
+  attributionId String
+  touchpointId  String
+
+  // Touchpoint attribution details
+  credit      Float // Attribution credit (0.0 to 1.0)
+  position    Int // Position in journey (1 = first, -1 = last)
+  timeToCconv Int // Minutes from this touchpoint to conversion
+
+  // Touchpoint context
+  touchpointType String
+  channel        String?
+  source         String?
+  medium         String?
+  campaign       String?
+  content        String?
+  url            String?
+
+  // Attribution calculation data
+  decayFactor    Float? // Time decay factor applied
+  positionWeight Float? // Position-based weight
+  channelWeight  Float? // Channel-specific weight
+
+  // Metadata
+  timestamp    DateTime
+  calculatedAt DateTime @default(now())
+
+  // Relations
+  attribution LeadPulseAttribution @relation(fields: [attributionId], references: [id], onDelete: Cascade)
+  touchpoint  LeadPulseTouchpoint  @relation(fields: [touchpointId], references: [id])
+
+  @@index([attributionId, position])
+  @@index([touchpointId])
+  @@index([channel, timestamp])
+}
+
+model LeadPulseCampaign {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Campaign identification
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+
+  // Campaign settings
+  channel String // email, social, search, direct, etc.
+  type    CampaignType
+  status  CampaignStatus @default(DRAFT)
+
+  // Attribution settings
+  attributionConfigId String?
+  customAttribution   Json? // Campaign-specific attribution rules
+
+  // Budget and goals
+  budget          Float?
+  goalConversions Int?
+  goalValue       Float?
+
+  // Tracking
+  startDate DateTime
+  endDate   DateTime?
+
+  // Performance metrics
+  impressions     Int   @default(0)
+  clicks          Int   @default(0)
+  conversions     Int   @default(0)
+  conversionValue Float @default(0)
+  cost            Float @default(0)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+
+  // Relations
+  creator           User                        @relation("CampaignCreator", fields: [createdBy], references: [id])
+  attributionConfig LeadPulseAttributionConfig? @relation(fields: [attributionConfigId], references: [id])
+  touchpoints       LeadPulseTouchpoint[]       @relation("CampaignTouchpoints")
+
+  @@index([channel, status])
+  @@index([startDate, endDate])
+  @@index([utmSource, utmMedium, utmCampaign])
+}
+
+model LeadPulseConversionWindow {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Window configuration
+  windowType ConversionWindowType
+  duration   Int // Duration in specified unit
+  unit       TimeUnit // HOURS, DAYS, WEEKS, MONTHS
+
+  // Conversion criteria
+  conversionEvents Json // Events that trigger conversion
+  conversionRules  Json? // Additional rules for conversion qualification
+
+  // Attribution settings
+  includeViewThrough  Boolean @default(true)
+  includeClickThrough Boolean @default(true)
+  crossSessionWindow  Boolean @default(true)
+
+  // Value settings
+  hasValue     Boolean @default(false)
+  valueField   String? // Field to extract value from
+  defaultValue Float? // Default value if none specified
+
+  // Metadata
+  isActive  Boolean  @default(true)
+  priority  Int      @default(1) // Lower number = higher priority
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+
+  // Relations
+  creator User @relation("ConversionWindowCreator", fields: [createdBy], references: [id])
+
+  @@index([isActive])
+  @@index([priority, isActive])
+}
+
+// Attribution Enums
+enum AttributionDuplicateHandling {
+  FIRST_TOUCH
+  LAST_TOUCH
+  HIGHEST_VALUE
+  SUM_VALUES
+  IGNORE_DUPLICATES
+}
+
+enum CampaignType {
+  EMAIL
+  SOCIAL
+  SEARCH
+  DISPLAY
+  DIRECT
+  REFERRAL
+  AFFILIATE
+  SMS
+  WHATSAPP
+  CONTENT
+  VIDEO
+  PODCAST
+  OFFLINE
+}
+
+enum ConversionWindowType {
+  FIXED
+  SLIDING
+  SESSION_BASED
+  EVENT_BASED
+}
+
+enum TimeUnit {
+  MINUTES
+  HOURS
+  DAYS
+  WEEKS
+  MONTHS
+}
+
+// MCP (Model Context Protocol) Tables
+// These tables store data specifically for MCP servers to provide real analytics
+
+// MCP Campaign Metrics - Real campaign performance data for Campaign Analytics Server
+model MCPCampaignMetrics {
+  id           String   @id @default(cuid())
+  campaignId   String   // Reference to actual campaign (EmailCampaign, SMSCampaign, etc.)
+  campaignType String   // EMAIL, SMS, WHATSAPP
+  campaignName String
+  organizationId String
+
+  // Core metrics
+  sent         Int      @default(0)
+  delivered    Int      @default(0)
+  opened       Int      @default(0)
+  clicked      Int      @default(0)
+  converted    Int      @default(0)
+  bounced      Int      @default(0)
+  unsubscribed Int      @default(0)
+  responded    Int      @default(0)
+
+  // Calculated rates
+  openRate       Float @default(0)
+  clickRate      Float @default(0)
+  conversionRate Float @default(0)
+  bounceRate     Float @default(0)
+  responseRate   Float @default(0)
+
+  // Financial metrics
+  revenue Float @default(0)
+  cost    Float @default(0)
+  roi     Float @default(0)
+
+  // A/B testing data
+  abTestData Json? // Stores A/B test results and variants
+
+  // Metadata
+  calculatedAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([campaignType, organizationId])
+  @@index([calculatedAt])
+}
+
+// MCP Customer Predictions - AI-generated customer insights for Customer Data Server
+model MCPCustomerPredictions {
+  id             String   @id @default(cuid())
+  contactId      String
+  organizationId String
+
+  // Prediction scores
+  churnRisk       Float    // 0-100 likelihood of churning
+  lifetimeValue   Float    // Predicted customer lifetime value
+  engagementScore Int      // 0-100 engagement score
+  segment         String   // Customer segment assignment
+
+  // Behavioral insights
+  lastActivityDate   DateTime
+  nextBestAction     String   // Recommended action
+  preferredChannel   String   // EMAIL, SMS, WHATSAPP
+  behavioralScores   Json     // Mobile usage, price sensitivity, etc.
+  insights           Json     // Array of actionable insights
+
+  // Prediction metadata
+  confidenceScore Int      @default(85) // 0-100 confidence in predictions
+  calculatedAt    DateTime @default(now())
+  lastUpdated     DateTime @updatedAt
+
+  // Relations
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([segment, organizationId])
+  @@index([churnRisk])
+  @@index([calculatedAt])
+}
+
+// MCP Visitor Sessions - Enhanced visitor tracking for LeadPulse Server
+model MCPVisitorSessions {
+  id         String   @id @default(cuid())
+  sessionId  String   @unique
+  organizationId String
+
+  // Visitor identification
+  fingerprint String
+  ipAddress   String
+  userAgent   String
+
+  // Device information
+  device   String // mobile, desktop, tablet
+  browser  String
+  os       String
+
+  // Location data
+  city     String
+  country  String
+  region   String
+  timezone String
+
+  // Session metrics
+  sessionStart DateTime
+  sessionEnd   DateTime
+  duration     Int      // Session duration in seconds
+  pagesViewed  Int      @default(0)
+  interactions Int      @default(0)
+
+  // Engagement metrics
+  engagementScore Int   @default(0) // 0-100
+  conversionValue Float @default(0)
+  bounceRate      Float @default(0)
+
+  // Traffic source
+  trafficSource String  // google, direct, facebook, etc.
+  trafficMedium String  // organic, cpc, social, email, etc.
+  referrer      String?
+  utmCampaign   String?
+
+  // Journey data
+  pageViews        Json    // Array of page views with timestamps
+  journeyPattern   String  // mobile_first_explorer, business_decision_maker, etc.
+  characteristics  Json    // Array of behavioral characteristics
+
+  // Status
+  isActive     Boolean @default(false)
+  hasConverted Boolean @default(false)
+
+  // Metadata
+  calculatedAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, sessionStart])
+  @@index([isActive])
+  @@index([hasConverted])
+  @@index([journeyPattern])
+}
+
+// MCP Monitoring Metrics - System and business metrics for Monitoring Server
+model MCPMonitoringMetrics {
+  id             String   @id @default(cuid())
+  organizationId String?  // Null for global metrics
+
+  // Metric identification
+  category    String // business, system, security, infrastructure
+  metricName  String
+  metricValue Float
+  unit        String // count, percentage, milliseconds, USD, etc.
+
+  // Metadata
+  timestamp   DateTime @default(now())
+  metadata    Json?    // Additional metric data, time series, etc.
+  tags        Json?    // Array of tags for filtering
+
+  // Alert configuration
+  alertLevel String  @default("info") // info, warning, critical
+  isActive   Boolean @default(true)
+
+  // Metadata
+  calculatedAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([category, metricName])
+  @@index([timestamp])
+  @@index([alertLevel, isActive])
+}
+
+// Social Media Account model for multi-tenant OAuth connections
+model SocialMediaAccount {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  platform       String    // facebook, instagram, twitter, linkedin, youtube, etc.
+  accountId      String    // Platform-specific account ID
+  accountName    String?   // Display name of the account
+  accessToken    String    // Encrypted OAuth access token
+  refreshToken   String?   // Encrypted OAuth refresh token
+  expiresAt      DateTime? // Token expiration time
+  scope          Json      @default("[]") // OAuth scopes granted
+  isActive       Boolean   @default(true)
+  lastSync       DateTime? // Last successful API call
+  metadata       Json      @default("{}") // Platform-specific metadata
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("SocialMediaAccountUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([platform])
+  @@index([organizationId, platform])
+  @@index([isActive])
+}
+
+// =====================================================================
+// ADMIN PORTAL MODELS
+// =====================================================================
+
+// Administrative audit logging for all admin actions
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminUserId String   // ID of the admin who performed the action
+  adminEmail  String   // Email of the admin for easier tracking
+  action      String   // Action performed (CREATE, UPDATE, DELETE, VIEW, IMPERSONATE, etc.)
+  resource    String   // Resource type (users, organizations, campaigns, etc.)
+  resourceId  String?  // ID of the affected resource
+  details     Json?    // Additional context, before/after values
+  ipAddress   String?  // IP address of the admin
+  userAgent   String?  // User agent of the admin
+  sessionId   String?  // Admin session ID
+  timestamp   DateTime @default(now())
+  
+  // Relations
+  admin User @relation("AdminAuditLogs", fields: [adminUserId], references: [id])
+
+  @@index([adminUserId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+  @@index([adminEmail])
+}
+
+// System health metrics for monitoring
+model SystemMetrics {
+  id              String   @id @default(cuid())
+  metricType      String   // cpu_usage, memory_usage, disk_usage, database_connections, etc.
+  value           Float    // The actual metric value
+  unit            String   // percentage, bytes, count, etc.
+  source          String   // server name or service identifier
+  timestamp       DateTime @default(now())
+  metadata        Json?    // Additional metric data
+  
+  @@index([metricType])
+  @@index([timestamp])
+  @@index([source])
+}
+
+// Security events and incidents
+model SecurityEvent {
+  id          String            @id @default(cuid())
+  eventType   SecurityEventType // LOGIN_ATTEMPT, SUSPICIOUS_ACTIVITY, etc.
+  severity    SecuritySeverity  // LOW, MEDIUM, HIGH, CRITICAL
+  title       String            // Brief description
+  description String?           // Detailed description
+  userId      String?           // User involved (if applicable)
+  ipAddress   String?           // IP address involved
+  userAgent   String?           // User agent
+  location    String?           // Geographic location
+  resolved    Boolean           @default(false)
+  resolvedBy  String?           // Admin who resolved it
+  resolvedAt  DateTime?         // When it was resolved
+  metadata    Json?             // Additional event data
+  timestamp   DateTime          @default(now())
+  
+  // Relations
+  user     User? @relation("SecurityEvents", fields: [userId], references: [id])
+  resolver User? @relation("SecurityEventResolver", fields: [resolvedBy], references: [id])
+
+  @@index([eventType])
+  @@index([severity])
+  @@index([timestamp])
+  @@index([resolved])
+  @@index([userId])
+}
+
+// Message queue status and monitoring
+model MessageQueue {
+  id             String                @id @default(cuid())
+  queueName      String                // email, sms, whatsapp, ai_processing, etc.
+  status         MessageQueueStatus    // ACTIVE, PAUSED, ERROR, MAINTENANCE
+  totalJobs      Int                   @default(0)
+  pendingJobs    Int                   @default(0) // Jobs waiting to be processed (pending)
+  processingJobs Int                   @default(0) // Jobs currently being processed (processing)
+  completedJobs  Int                   @default(0) // Successfully completed jobs (completed)
+  failedJobs     Int                   @default(0) // Failed jobs (failed)
+  stuckJobs      Int                   @default(0) // Jobs stuck in processing state (stuck)
+  lastProcessed  DateTime?             // Last time a job was processed
+  avgProcessTime Float?                // Average processing time in seconds
+  errorRate      Float                 @default(0) // Percentage
+  throughput     Float                 @default(0) // Jobs per minute
+  isHealthy      Boolean               @default(true) // Overall queue health status
+  timestamp      DateTime              @default(now()) // When these metrics were recorded
+  metadata       Json?                 // Additional queue data
+  updatedAt      DateTime              @updatedAt
+  
+  @@unique([queueName])
+  @@index([status])
+  @@index([queueName])
+  @@index([timestamp])
+  @@index([isHealthy])
+}
+
+// Support ticket management
+model SupportTicket {
+  id          String              @id @default(cuid())
+  ticketId    String              @unique // Human-readable ticket ID (e.g., MS-2024-001)
+  userId      String?             // User who created the ticket
+  userEmail   String              // Email of the ticket creator
+  subject     String              // Ticket subject
+  description String              // Initial ticket description
+  status      SupportTicketStatus @default(OPEN)
+  priority    SupportPriority     @default(MEDIUM)
+  category    String?             // billing, technical, feature_request, etc.
+  assignedTo  String?             // Admin assigned to handle the ticket
+  tags        String[]            @default([]) // Tags for categorization
+  metadata    Json?               // Additional ticket data
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  resolvedAt  DateTime?           // When the ticket was resolved
+  
+  // Relations
+  user     User?            @relation("UserSupportTickets", fields: [userId], references: [id])
+  assignee User?            @relation("AssignedSupportTickets", fields: [assignedTo], references: [id])
+  messages SupportMessage[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([userId])
+  @@index([assignedTo])
+  @@index([createdAt])
+}
+
+// Support ticket messages/replies
+model SupportMessage {
+  id           String        @id @default(cuid())
+  ticketId     String        // Reference to the support ticket
+  senderId     String?       // User who sent the message (null for system messages)
+  senderType   SenderType    // USER, ADMIN, SYSTEM
+  message      String        // Message content
+  attachments  String[]      @default([]) // File URLs
+  isInternal   Boolean       @default(false) // Internal admin notes
+  createdAt    DateTime      @default(now())
+  
+  // Relations
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender User?         @relation("SupportMessageSender", fields: [senderId], references: [id])
+
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+// System alerts for admins
+model SystemAlert {
+  id          String           @id @default(cuid())
+  alertType   SystemAlertType  // PERFORMANCE, ERROR, SECURITY, CAPACITY, etc.
+  severity    AlertSeverity    // LOW, MEDIUM, HIGH, CRITICAL
+  title       String           // Alert title
+  description String           // Alert description
+  source      String           // System component that triggered the alert
+  triggered   Boolean          @default(true)
+  resolved    Boolean          @default(false)
+  resolvedBy  String?          // Admin who resolved it
+  resolvedAt  DateTime?        // When it was resolved
+  metadata    Json?            // Additional alert data
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  // Relations
+  resolver User? @relation("SystemAlertResolver", fields: [resolvedBy], references: [id])
+
+  @@index([alertType])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+}
+
+// Admin session tracking
+model AdminSession {
+  id           String    @id @default(cuid())
+  userId       String    // Admin user ID
+  sessionToken String    @unique // Session token for identification
+  ipAddress    String?   // IP address of the admin session
+  userAgent    String?   // User agent string
+  location     String?   // Geographic location (city, country)
+  loginAt      DateTime  @default(now()) // When the session started
+  lastActivity DateTime  @default(now()) // Last activity in this session
+  logoutAt     DateTime? // When the session ended (null for active sessions)
+  isActive     Boolean   @default(true) // Whether session is still active
+  metadata     Json?     // Additional session data (browser, OS, etc.)
+  
+  // Relations
+  user User @relation("AdminSessions", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([loginAt])
+  @@index([isActive])
+  @@index([ipAddress])
+}
+
+
+// =====================================================================
+// ADMIN ENUMS
+// =====================================================================
+
+
+enum MessageQueueStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+  MAINTENANCE
+  OFFLINE
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_RESPONSE
+  RESOLVED
+  CLOSED
+  ESCALATED
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum SenderType {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+enum SystemAlertType {
+  PERFORMANCE
+  ERROR
+  SECURITY
+  CAPACITY
+  MAINTENANCE
+  DEPLOYMENT
+  BILLING
+  INTEGRATION
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// =====================================================================
+// Admin Notes model for admin user management
+// =====================================================================
+model AdminNote {
+  id        String    @id @default(cuid())
+  userId    String    // User this note is about
+  note      String    // The note content
+  type      NoteType  @default(INFO) // INFO, WARNING, CRITICAL
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Admin who created/updated the note
+  createdById String
+  updatedById String?
+  
+  // Relations
+  user        User @relation("UserAdminNotes", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy   User @relation("CreatedAdminNotes", fields: [createdById], references: [id])
+  updatedBy   User? @relation("UpdatedAdminNotes", fields: [updatedById], references: [id])
+  
+  @@index([userId])
+  @@index([createdById])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum NoteType {
+  INFO
+  WARNING
+  CRITICAL
+}
