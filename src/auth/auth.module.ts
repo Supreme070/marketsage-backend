@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitingModule } from '../rate-limiting/rate-limiting.module';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 import { RedisModule } from '../redis/redis.module';
+import { EmailService } from './email.service';
+import { AwsSesService } from './aws-ses.service';
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { RedisModule } from '../redis/redis.module';
     RateLimitingModule,
     RedisModule,
   ],
-  providers: [AuthService, JwtStrategy, PrismaService, RateLimitGuard],
+  providers: [AuthService, JwtStrategy, PrismaService, RateLimitGuard, EmailService, AwsSesService],
   controllers: [AuthController],
   exports: [AuthService, JwtStrategy, PassportModule, RateLimitGuard],
 })

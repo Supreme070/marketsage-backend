@@ -1,11 +1,12 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { LoginDto, RegisterDto } from './dto';
+import { LoginDto, RegisterDto, RegisterInitialDto, RegisterVerifyDto, RegisterCompleteDto } from './dto';
 import { LoginResponse, RegisterResponse, JWTPayload, UserRole } from '../types';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponse> {
@@ -349,5 +351,255 @@ export class AuthService {
 
   async testRedisConnection(): Promise<boolean> {
     return await this.redisService.isHealthy();
+  }
+
+  // Multi-step registration methods
+  async registerInitial(registerDto: RegisterInitialDto): Promise<{ success: boolean; registrationId: string; message: string; verificationPin?: string }> {
+    try {
+      this.logger.debug(`Initial registration attempt for email: ${registerDto.email}`);
+      
+      // Check if user already exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: registerDto.email },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('User with this email already exists');
+      }
+
+      // Check if there's already a pending registration
+      const existingTemp = await this.prisma.registrationTemp.findUnique({
+        where: { email: registerDto.email },
+      });
+
+      if (existingTemp) {
+        // Delete the old one and create a new one
+        await this.prisma.registrationTemp.delete({
+          where: { id: existingTemp.id },
+        });
+      }
+
+      // Generate 6-digit verification PIN
+      const verificationPin = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Set expiration time (15 minutes)
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      // Create temporary registration record
+      const tempRegistration = await this.prisma.registrationTemp.create({
+        data: {
+          email: registerDto.email,
+          name: registerDto.name,
+          verificationPin,
+          expiresAt,
+        },
+      });
+
+      // Send verification email
+      const emailSent = await this.emailService.sendVerificationEmail(
+        registerDto.email,
+        registerDto.name,
+        verificationPin
+      );
+
+      if (!emailSent) {
+        this.logger.warn(`Failed to send verification email to ${registerDto.email}`);
+      }
+
+      this.logger.log(`Initial registration created for ${registerDto.email} with ID: ${tempRegistration.id}`);
+
+      return {
+        success: true,
+        registrationId: tempRegistration.id,
+        message: 'Verification email sent. Please check your inbox.',
+        // Development only: include PIN in response
+        ...(process.env.NODE_ENV === 'development' && { verificationPin: verificationPin }),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Initial registration failed for ${registerDto.email}: ${err.message}`);
+      
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Initial registration failed');
+    }
+  }
+
+  async registerVerify(verifyDto: RegisterVerifyDto): Promise<{ success: boolean; message: string }> {
+    try {
+      this.logger.debug(`Verification attempt for registration ID: ${verifyDto.registrationId}`);
+      
+      // Find the temporary registration
+      const tempRegistration = await this.prisma.registrationTemp.findUnique({
+        where: { id: verifyDto.registrationId },
+      });
+
+      if (!tempRegistration) {
+        throw new NotFoundException('Registration not found or expired');
+      }
+
+      // Check if already verified
+      if (tempRegistration.verified) {
+        throw new BadRequestException('Registration already verified');
+      }
+
+      // Check if expired
+      if (new Date() > tempRegistration.expiresAt) {
+        // Clean up expired registration
+        await this.prisma.registrationTemp.delete({
+          where: { id: verifyDto.registrationId },
+        });
+        throw new BadRequestException('Verification code expired. Please start registration again.');
+      }
+
+      // Verify PIN
+      if (tempRegistration.verificationPin !== verifyDto.pin) {
+        throw new BadRequestException('Invalid verification code');
+      }
+
+      // Mark as verified
+      await this.prisma.registrationTemp.update({
+        where: { id: verifyDto.registrationId },
+        data: { verified: true },
+      });
+
+      this.logger.log(`Registration verified for ${tempRegistration.email}`);
+
+      return {
+        success: true,
+        message: 'Email verified successfully. You can now complete your registration.',
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Verification failed for registration ID ${verifyDto.registrationId}: ${err.message}`);
+      
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Verification failed');
+    }
+  }
+
+  async registerComplete(completeDto: RegisterCompleteDto): Promise<RegisterResponse> {
+    try {
+      this.logger.debug(`Registration completion attempt for registration ID: ${completeDto.registrationId}`);
+      
+      // Find the verified temporary registration
+      const tempRegistration = await this.prisma.registrationTemp.findUnique({
+        where: { id: completeDto.registrationId },
+      });
+
+      if (!tempRegistration) {
+        throw new NotFoundException('Registration not found');
+      }
+
+      if (!tempRegistration.verified) {
+        throw new BadRequestException('Email not verified. Please verify your email first.');
+      }
+
+      // Check if expired
+      if (new Date() > tempRegistration.expiresAt) {
+        // Clean up expired registration
+        await this.prisma.registrationTemp.delete({
+          where: { id: completeDto.registrationId },
+        });
+        throw new BadRequestException('Registration expired. Please start registration again.');
+      }
+
+      // Check if user already exists (double-check)
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: tempRegistration.email },
+      });
+
+      if (existingUser) {
+        // Clean up temp registration
+        await this.prisma.registrationTemp.delete({
+          where: { id: completeDto.registrationId },
+        });
+        throw new ConflictException('User with this email already exists');
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(completeDto.password, this.saltRounds);
+
+      // Create user
+      const user = await this.prisma.user.create({
+        data: {
+          email: tempRegistration.email,
+          password: hashedPassword,
+          name: tempRegistration.name,
+          role: UserRole.USER,
+          emailVerified: new Date(), // Mark email as verified
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          organizationId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // Clean up temporary registration
+      await this.prisma.registrationTemp.delete({
+        where: { id: completeDto.registrationId },
+      });
+
+      // Generate JWT token
+      const payload: JWTPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role as UserRole,
+        organizationId: user.organizationId,
+      };
+
+      const accessToken = this.jwtService.sign(payload);
+
+      // Store session in Redis
+      const sessionData = {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        organizationId: user.organizationId,
+        loginTime: new Date().toISOString(),
+        userAgent: 'registration',
+      };
+      
+      await this.redisService.setSession(user.id, sessionData, 24 * 60 * 60);
+
+      // Send welcome email
+      await this.emailService.sendWelcomeEmail(user.email, user.name || 'User');
+
+      this.logger.log(`Registration completed successfully for ${user.email} with ID: ${user.id}`);
+
+      return {
+        success: true,
+        message: 'Registration completed successfully',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role as UserRole,
+          organizationId: user.organizationId,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        accessToken,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Registration completion failed for registration ID ${completeDto.registrationId}: ${err.message}`);
+      
+      if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
+        throw error;
+      }
+      
+      throw new BadRequestException('Registration completion failed');
+    }
   }
 }

@@ -42,6 +42,16 @@ export class RateLimitingService {
       ? config.keyGenerator(identifier, endpoint)
       : `rate_limit:${identifier}:${endpoint}`;
 
+    // Skip rate limiting in development mode
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        allowed: true,
+        limit: config.maxRequests,
+        remaining: config.maxRequests,
+        resetTime: now + config.windowMs
+      };
+    }
+
     // Check if this request should be skipped
     if (config.skipIf && config.skipIf(identifier, endpoint)) {
       return {

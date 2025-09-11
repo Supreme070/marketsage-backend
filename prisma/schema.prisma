@@ -300,6 +300,21 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Temporary registration data for multi-step registration
+model RegistrationTemp {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String
+  verificationPin  String
+  verified         Boolean  @default(false)
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
 // Integration model
 model Integration {
   id             String            @id @default(cuid())
