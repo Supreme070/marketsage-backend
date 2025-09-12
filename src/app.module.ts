@@ -12,6 +12,7 @@ import { RedisModule } from './redis/redis.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { QueueModule } from './queue/queue.module';
 import { AIModule } from './ai/ai.module';
+import { WorkflowsModule } from './workflows/workflows.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -28,6 +29,7 @@ import { PrismaService } from './prisma/prisma.service';
     NotificationsModule,
     QueueModule,
     AIModule,
+    WorkflowsModule,
     HealthModule,
     MetricsModule,
   ],

@@ -19,6 +19,11 @@ import { CreateNotificationDto, UpdateNotificationDto, MarkAsReadDto } from './d
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RateLimitGuard } from '../auth/guards/rate-limit.guard';
 import { RateLimit } from '../auth/decorators/rate-limit.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { OwnershipGuard } from '../auth/guards/ownership.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { RequireOwnership } from '../auth/decorators/ownership.decorator';
+import { Permission } from '../types/permissions';
 import { ApiResponse } from '../types';
 
 @Controller('notifications')
@@ -32,7 +37,8 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
   @RateLimit(100, 60 * 1000) // 100 requests per minute
   async findAll(
     @Request() req: any,
@@ -72,7 +78,8 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async getUnreadCount(@Request() req: any): Promise<ApiResponse> {
     try {
@@ -96,7 +103,9 @@ export class NotificationsController {
   }
 
   @Get(':id')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
+  @RequireOwnership('Notification')
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async findOne(
     @Param('id') id: string,
@@ -126,7 +135,8 @@ export class NotificationsController {
   }
 
   @Post()
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.CREATE_USER)
   @RateLimit(20, 60 * 1000) // 20 notifications per minute
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -157,7 +167,9 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.UPDATE_USER)
+  @RequireOwnership('Notification')
   @RateLimit(100, 60 * 1000) // 100 mark as read per minute
   async markAsRead(
     @Param('id') id: string,
@@ -187,7 +199,8 @@ export class NotificationsController {
   }
 
   @Patch('mark-all-read')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.UPDATE_USER)
   @RateLimit(10, 60 * 1000) // 10 mark all read per minute
   async markAllAsRead(@Request() req: any): Promise<ApiResponse> {
     try {
@@ -211,7 +224,9 @@ export class NotificationsController {
   }
 
   @Patch(':id')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.UPDATE_USER)
+  @RequireOwnership('Notification')
   @RateLimit(20, 60 * 1000) // 20 updates per minute
   async update(
     @Param('id') id: string,
@@ -243,7 +258,9 @@ export class NotificationsController {
   }
 
   @Delete(':id')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.DELETE_USER)
+  @RequireOwnership('Notification')
   @RateLimit(10, 60 * 1000) // 10 deletions per minute
   async remove(
     @Param('id') id: string,
@@ -270,7 +287,8 @@ export class NotificationsController {
   }
 
   @Delete('clear-all')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.DELETE_USER)
   @RateLimit(5, 60 * 1000) // 5 clear all per minute
   async clearAll(@Request() req: any): Promise<ApiResponse> {
     try {

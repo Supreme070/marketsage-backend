@@ -20,9 +20,15 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RateLimitGuard } from '../auth/guards/rate-limit.guard';
 import { RateLimit } from '../auth/decorators/rate-limit.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { OwnershipGuard } from '../auth/guards/ownership.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { RequireOwnership } from '../auth/decorators/ownership.decorator';
+import { Permission } from '../types/permissions';
 import { ApiResponse } from '../types';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 @UsePipes(new ValidationPipe({ 
   whitelist: true, 
   forbidNonWhitelisted: true,
@@ -32,7 +38,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.CREATE_USER)
   @RateLimit(10, 60 * 1000) // 10 user creations per minute
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createUserDto: CreateUserDto): Promise<ApiResponse> {
@@ -57,7 +64,8 @@ export class UsersController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
   @RateLimit(100, 60 * 1000) // 100 requests per minute
   async findAll(
     @Query('page') page: string = '1',
@@ -88,7 +96,9 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
+  @RequireOwnership('User')
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async findOne(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -112,7 +122,9 @@ export class UsersController {
   }
 
   @Get(':id/stats')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
+  @RequireOwnership('User')
   @RateLimit(30, 60 * 1000) // 30 requests per minute
   async getUserStats(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -136,7 +148,8 @@ export class UsersController {
   }
 
   @Get('email/:email')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
   @RateLimit(20, 60 * 1000) // 20 requests per minute
   async findByEmail(@Param('email') email: string): Promise<ApiResponse> {
     try {
@@ -170,7 +183,9 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.UPDATE_USER)
+  @RequireOwnership('User')
   @RateLimit(20, 60 * 1000) // 20 updates per minute
   async update(
     @Param('id') id: string,
@@ -197,7 +212,8 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.DELETE_USER)
   @RateLimit(5, 60 * 1000) // 5 deletions per minute
   async remove(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -221,7 +237,9 @@ export class UsersController {
   }
 
   @Post(':id/change-password')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
+  @RequirePermissions(Permission.UPDATE_USER)
+  @RequireOwnership('User')
   @RateLimit(5, 60 * 1000) // 5 password changes per minute
   @HttpCode(HttpStatus.OK)
   async changePassword(
@@ -267,7 +285,8 @@ export class UsersController {
   }
 
   @Get('me/profile')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_USER)
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async getMyProfile(@Request() req: any): Promise<ApiResponse> {
     try {
@@ -291,7 +310,8 @@ export class UsersController {
   }
 
   @Patch('me/profile')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.UPDATE_USER)
   @RateLimit(10, 60 * 1000) // 10 profile updates per minute
   async updateMyProfile(
     @Request() req: any,

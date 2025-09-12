@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { 
   HealthCheckService, 
   HealthCheck,
@@ -6,6 +6,8 @@ import {
 } from '@nestjs/terminus';
 import { PrismaHealthIndicator } from './prisma-health.indicator';
 import { RedisHealthIndicator } from './redis-health.indicator';
+import { RateLimitGuard } from '../auth/guards/rate-limit.guard';
+import { RateLimit } from '../auth/decorators/rate-limit.decorator';
 
 @Controller('health')
 export class HealthController {
@@ -16,6 +18,8 @@ export class HealthController {
   ) {}
 
   @Get()
+  @UseGuards(RateLimitGuard)
+  @RateLimit(100, 60 * 1000) // 100 requests per minute for health checks
   @HealthCheck()
   check(): Promise<HealthCheckResult> {
     return this.health.check([
@@ -25,6 +29,8 @@ export class HealthController {
   }
 
   @Get('simple')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(200, 60 * 1000) // 200 requests per minute for simple health checks
   getSimpleHealth() {
     return {
       status: 'ok',
