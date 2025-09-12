@@ -16,7 +16,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 import { RateLimit } from './decorators/rate-limit.decorator';
-import { LoginDto, RegisterDto } from './dto';
+import { LoginDto, RegisterDto, RegisterInitialDto, RegisterVerifyDto, RegisterCompleteDto } from './dto';
 import { ApiResponse } from '../types';
 
 @Controller('auth')
@@ -191,6 +191,96 @@ export class AuthController {
         error: {
           code: 'DATABASE_ERROR',
           message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  // Multi-step registration endpoints
+  @Post('register/initial')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(20, 15 * 60 * 1000) // 20 attempts per 15 minutes (increased for development)
+  @HttpCode(HttpStatus.OK)
+  async registerInitial(@Body() registerDto: RegisterInitialDto): Promise<ApiResponse> {
+    try {
+      const result = await this.authService.registerInitial(registerDto);
+      
+      return {
+        success: result.success,
+        data: { 
+          registrationId: result.registrationId,
+          ...(result.verificationPin && { verificationPin: result.verificationPin }),
+        },
+        message: result.message,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Initial registration error: ${err.message}`);
+      
+      return {
+        success: false,
+        error: {
+          code: err.name || 'INITIAL_REGISTRATION_ERROR',
+          message: err.message || 'Initial registration failed',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('register/verify')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10, 15 * 60 * 1000) // 10 attempts per 15 minutes
+  @HttpCode(HttpStatus.OK)
+  async registerVerify(@Body() verifyDto: RegisterVerifyDto): Promise<ApiResponse> {
+    try {
+      const result = await this.authService.registerVerify(verifyDto);
+      
+      return {
+        success: result.success,
+        message: result.message,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Verification error: ${err.message}`);
+      
+      return {
+        success: false,
+        error: {
+          code: err.name || 'VERIFICATION_ERROR',
+          message: err.message || 'Verification failed',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('register/complete')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(3, 15 * 60 * 1000) // 3 attempts per 15 minutes
+  @HttpCode(HttpStatus.CREATED)
+  async registerComplete(@Body() completeDto: RegisterCompleteDto): Promise<ApiResponse> {
+    try {
+      const result = await this.authService.registerComplete(completeDto);
+      
+      return {
+        success: result.success,
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+        },
+        message: result.message,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Registration completion error: ${err.message}`);
+      
+      return {
+        success: false,
+        error: {
+          code: err.name || 'REGISTRATION_COMPLETION_ERROR',
+          message: err.message || 'Registration completion failed',
           timestamp: new Date().toISOString(),
         },
       };

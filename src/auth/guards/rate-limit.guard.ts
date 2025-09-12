@@ -15,6 +15,11 @@ export class RateLimitGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip rate limiting in development mode
+    if (process.env.NODE_ENV === 'development') {
+      return true;
+    }
+    
     const request = context.switchToHttp().getRequest<Request>();
     const limit = this.reflector.get<number>('rateLimit', context.getHandler()) || this.defaultLimit;
     const windowMs = this.reflector.get<number>('rateLimitWindow', context.getHandler()) || this.defaultWindow;
