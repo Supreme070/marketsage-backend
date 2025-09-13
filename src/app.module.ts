@@ -9,9 +9,11 @@ import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { TracingModule } from './tracing/tracing.module';
 import { RedisModule } from './redis/redis.module';
+import { RateLimitingModule } from './rate-limiting/rate-limiting.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { QueueModule } from './queue/queue.module';
 import { AIModule } from './ai/ai.module';
+import { ContactsModule } from './contacts/contacts.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -22,6 +24,7 @@ import { PrismaService } from './prisma/prisma.service';
       envFilePath: '.env', // Use the local .env file
     }),
     RedisModule,
+    RateLimitingModule,
     TracingModule,
     AuthModule,
     UsersModule,
@@ -29,6 +32,7 @@ import { PrismaService } from './prisma/prisma.service';
     NotificationsModule,
     QueueModule,
     AIModule,
+    ContactsModule,
     WorkflowsModule,
     HealthModule,
     MetricsModule,

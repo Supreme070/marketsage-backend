@@ -6,7 +6,6 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
-import { RateLimitingModule } from '../rate-limiting/rate-limiting.module';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { OwnershipGuard } from './guards/ownership.guard';
@@ -28,7 +27,6 @@ import { AwsSesService } from './aws-ses.service';
       inject: [ConfigService],
     }),
     ConfigModule,
-    RateLimitingModule,
     RedisModule,
   ],
   providers: [
