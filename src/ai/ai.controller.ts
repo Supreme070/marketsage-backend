@@ -14,6 +14,9 @@ import { AIService } from './ai.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RateLimitGuard } from '../auth/guards/rate-limit.guard';
 import { RateLimit } from '../auth/decorators/rate-limit.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../types/permissions';
 import { ApiResponse } from '../types';
 import { IsString, IsOptional, IsArray, IsObject, MaxLength } from 'class-validator';
 
@@ -87,7 +90,8 @@ export class AIController {
   constructor(private readonly aiService: AIService) {}
 
   @Post('chat')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
   @RateLimit(30, 60 * 1000) // 30 requests per minute
   @HttpCode(HttpStatus.OK)
   async chat(
@@ -122,7 +126,8 @@ export class AIController {
   }
 
   @Post('analyze')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
   @RateLimit(20, 60 * 1000) // 20 requests per minute
   @HttpCode(HttpStatus.OK)
   async analyze(
@@ -157,7 +162,8 @@ export class AIController {
   }
 
   @Post('predict')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
   @RateLimit(15, 60 * 1000) // 15 requests per minute
   @HttpCode(HttpStatus.OK)
   async predict(
@@ -192,7 +198,8 @@ export class AIController {
   }
 
   @Post('generate-content')
-  @UseGuards(RateLimitGuard)
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
   @RateLimit(10, 60 * 1000) // 10 requests per minute
   @HttpCode(HttpStatus.OK)
   async generateContent(

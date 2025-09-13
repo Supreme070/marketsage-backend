@@ -8,12 +8,20 @@ import {
   ValidationPipe,
   UsePipes,
   Headers,
+  UseGuards,
 } from '@nestjs/common';
 import { AIService } from './ai.service';
 import { ChatMessageDto } from './ai.controller';
 import { ApiResponse } from '../types';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../types/permissions';
+import { RateLimitGuard } from '../auth/guards/rate-limit.guard';
+import { RateLimit } from '../auth/decorators/rate-limit.decorator';
 
 @Controller('ai-test')
+@UseGuards(JwtAuthGuard)
 @UsePipes(new ValidationPipe({ 
   whitelist: true, 
   forbidNonWhitelisted: true,
@@ -23,11 +31,17 @@ export class AITestController {
   constructor(private readonly aiService: AIService) {}
 
   @Get('ping')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.CONFIGURE_AI_SETTINGS)
+  @RateLimit(10, 60 * 1000) // 10 requests per minute
   async ping(): Promise<{ message: string }> {
     return { message: 'AI Test Controller is working!' };
   }
 
   @Post('chat')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.CONFIGURE_AI_SETTINGS)
+  @RateLimit(5, 60 * 1000) // 5 test requests per minute
   @HttpCode(HttpStatus.OK)
   async testChat(
     @Body() chatMessageDto: ChatMessageDto,
@@ -63,6 +77,9 @@ export class AITestController {
   }
 
   @Get('queue-stats')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.CONFIGURE_AI_SETTINGS)
+  @RateLimit(20, 60 * 1000) // 20 requests per minute
   @HttpCode(HttpStatus.OK)
   async getQueueStats(): Promise<ApiResponse> {
     try {
@@ -88,6 +105,9 @@ export class AITestController {
   }
 
   @Post('job-status')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.CONFIGURE_AI_SETTINGS)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
   @HttpCode(HttpStatus.OK)
   async getJobStatus(
     @Body() body: { queueName: string; jobId: string },

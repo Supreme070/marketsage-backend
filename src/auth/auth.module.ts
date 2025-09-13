@@ -8,6 +8,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitingModule } from '../rate-limiting/rate-limiting.module';
 import { RateLimitGuard } from './guards/rate-limit.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
+import { OwnershipGuard } from './guards/ownership.guard';
 import { RedisModule } from '../redis/redis.module';
 import { EmailService } from './email.service';
 import { AwsSesService } from './aws-ses.service';
@@ -29,8 +31,24 @@ import { AwsSesService } from './aws-ses.service';
     RateLimitingModule,
     RedisModule,
   ],
-  providers: [AuthService, JwtStrategy, PrismaService, RateLimitGuard, EmailService, AwsSesService],
+  providers: [
+    AuthService, 
+    JwtStrategy, 
+    PrismaService, 
+    RateLimitGuard, 
+    PermissionsGuard,
+    OwnershipGuard,
+    EmailService, 
+    AwsSesService
+  ],
   controllers: [AuthController],
-  exports: [AuthService, JwtStrategy, PassportModule, RateLimitGuard],
+  exports: [
+    AuthService, 
+    JwtStrategy, 
+    PassportModule, 
+    RateLimitGuard,
+    PermissionsGuard,
+    OwnershipGuard
+  ],
 })
 export class AuthModule {}
