@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { RateLimitingService } from './rate-limiting.service';
 import { RedisModule } from '../redis/redis.module';
 
+@Global()
 @Module({
   imports: [RedisModule],
   providers: [RateLimitingService],
