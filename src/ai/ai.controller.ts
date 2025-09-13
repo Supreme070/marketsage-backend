@@ -197,38 +197,66 @@ export class AIController {
     }
   }
 
-  @Post('generate-content')
+  @Post('supreme-v3')
   @UseGuards(PermissionsGuard, RateLimitGuard)
   @RequirePermissions(Permission.USE_AI_FEATURES)
-  @RateLimit(10, 60 * 1000) // 10 requests per minute
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
   @HttpCode(HttpStatus.OK)
-  async generateContent(
+  async supremeV3(
     @Request() req: any,
-    @Body() contentGenerationDto: ContentGenerationDto,
+    @Body() requestBody: any,
     @Headers('x-correlation-id') correlationId?: string,
   ): Promise<ApiResponse> {
     try {
-      const result = await this.aiService.processContentGeneration(
-        req.user.id,
-        contentGenerationDto,
-        correlationId,
-      );
+      // Handle different request types for Supreme-v3
+      const { type, question, userId, context, enableTaskExecution } = requestBody;
+      
+      let result;
+      switch (type) {
+        case 'question':
+          result = await this.aiService.processSupremeV3Question(
+            req.user.id,
+            { message: question, context, enableTaskExecution },
+            correlationId,
+          );
+          break;
+        case 'analyze':
+          result = await this.aiService.processSupremeV3Analysis(
+            req.user.id,
+            { question, context, enableTaskExecution },
+            correlationId,
+          );
+          break;
+        case 'customer':
+          result = await this.aiService.processSupremeV3Customer(
+            req.user.id,
+            { customers: requestBody.customers, context },
+            correlationId,
+          );
+          break;
+        default:
+          result = await this.aiService.processSupremeV3Generic(
+            req.user.id,
+            requestBody,
+            correlationId,
+          );
+      }
 
       return {
         success: true,
         data: result,
-        message: 'Content generation request processed successfully',
+        message: 'Supreme-v3 request processed successfully',
       };
     } catch (error) {
       const err = error as Error;
       return {
         success: false,
         error: {
-          code: 'AI_CONTENT_ERROR',
+          code: 'SUPREME_V3_ERROR',
           message: err.message,
           timestamp: new Date().toISOString(),
         },
-        message: 'Failed to process content generation request',
+        message: 'Failed to process Supreme-v3 request',
       };
     }
   }
