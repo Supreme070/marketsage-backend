@@ -93,6 +93,28 @@ model Organization {
   mcpVisitorSessions    MCPVisitorSessions[]
   mcpMonitoringMetrics  MCPMonitoringMetrics[]
   
+  // API Security Relations
+  apiKeys               ApiKey[]
+  
+}
+
+// API Key model for secure API access
+model ApiKey {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String   // Human-readable name for the API key
+  description    String?  // Optional description
+  isActive       Boolean  @default(true)
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
 }
 
 // User model for authentication and platform access
