@@ -4,6 +4,7 @@ import { CreateFormDto, UpdateFormDto, FormQueryDto, FormSubmissionDto, Submissi
 import { CreateInsightDto, InsightQueryDto, GenerateInsightDto } from '../dto/insight.dto';
 import { CreateVisitorDto, VisitorQueryDto, CreateTouchpointDto } from '../dto/visitor.dto';
 
+
 @Injectable()
 export class LeadPulseService {
   constructor(private readonly prisma: PrismaService) {}

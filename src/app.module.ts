@@ -16,6 +16,7 @@ import { AIModule } from './ai/ai.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { LeadPulseModule } from './leadpulse/leadpulse.module';
+import { EmailModule } from './email/email.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -36,6 +37,7 @@ import { PrismaService } from './prisma/prisma.service';
     ContactsModule,
     WorkflowsModule,
     LeadPulseModule,
+    EmailModule,
     HealthModule,
     MetricsModule,
   ],
