@@ -12,53 +12,53 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { EmailService } from './email.service';
+import { SMSService } from './sms.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { 
-  CreateEmailCampaignDto, 
-  UpdateEmailCampaignDto, 
-  EmailCampaignQueryDto,
-  SendEmailCampaignDto,
-  EmailCampaignAnalyticsDto,
-} from './dto/email-campaign.dto';
+  CreateSMSCampaignDto, 
+  UpdateSMSCampaignDto, 
+  SMSCampaignQueryDto,
+  SendSMSCampaignDto,
+  SMSCampaignAnalyticsDto,
+} from './dto/sms-campaign.dto';
 import { 
-  CreateEmailTemplateDto, 
-  UpdateEmailTemplateDto, 
-  EmailTemplateQueryDto,
-} from './dto/email-template.dto';
+  CreateSMSTemplateDto, 
+  UpdateSMSTemplateDto, 
+  SMSTemplateQueryDto,
+} from './dto/sms-template.dto';
 import { 
-  CreateEmailProviderDto, 
-  UpdateEmailProviderDto, 
-  TestEmailProviderDto,
-} from './dto/email-provider.dto';
+  CreateSMSProviderDto, 
+  UpdateSMSProviderDto, 
+  TestSMSProviderDto,
+} from './dto/sms-provider.dto';
 
-@Controller('email')
+@Controller('sms')
 @UseGuards(JwtAuthGuard)
-export class EmailController {
-  constructor(private readonly emailService: EmailService) {}
+export class SMSController {
+  constructor(private readonly smsService: SMSService) {}
 
-  // ==================== EMAIL CAMPAIGNS ====================
+  // ==================== SMS CAMPAIGNS ====================
 
   @Post('campaigns')
   async createCampaign(
-    @Body() data: CreateEmailCampaignDto,
+    @Body() data: CreateSMSCampaignDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.createCampaign(data, userId, organizationId);
+    return this.smsService.createCampaign(data, userId, organizationId);
   }
 
   @Get('campaigns')
   async getCampaigns(
-    @Query() query: EmailCampaignQueryDto,
+    @Query() query: SMSCampaignQueryDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.getCampaigns(query, userId, organizationId);
+    return this.smsService.getCampaigns(query, userId, organizationId);
   }
 
   @Get('campaigns/:id')
@@ -69,19 +69,19 @@ export class EmailController {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.getCampaignById(id, userId, organizationId);
+    return this.smsService.getCampaignById(id, userId, organizationId);
   }
 
   @Put('campaigns/:id')
   async updateCampaign(
     @Param('id') id: string,
-    @Body() data: UpdateEmailCampaignDto,
+    @Body() data: UpdateSMSCampaignDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.updateCampaign(id, data, userId, organizationId);
+    return this.smsService.updateCampaign(id, data, userId, organizationId);
   }
 
   @Delete('campaigns/:id')
@@ -93,7 +93,7 @@ export class EmailController {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.deleteCampaign(id, userId, organizationId);
+    return this.smsService.deleteCampaign(id, userId, organizationId);
   }
 
   @Post('campaigns/:id/duplicate')
@@ -104,53 +104,53 @@ export class EmailController {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.duplicateCampaign(id, userId, organizationId);
+    return this.smsService.duplicateCampaign(id, userId, organizationId);
   }
 
   @Post('campaigns/:id/send')
   async sendCampaign(
     @Param('id') id: string,
-    @Body() data: SendEmailCampaignDto,
+    @Body() data: SendSMSCampaignDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.sendCampaign(id, data, userId, organizationId);
+    return this.smsService.sendCampaign(id, data, userId, organizationId);
   }
 
   @Get('campaigns/:id/analytics')
   async getCampaignAnalytics(
     @Param('id') id: string,
-    @Query() query: EmailCampaignAnalyticsDto,
+    @Query() query: SMSCampaignAnalyticsDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
     
-    return this.emailService.getCampaignAnalytics(id, query, userId, organizationId);
+    return this.smsService.getCampaignAnalytics(id, query, userId, organizationId);
   }
 
-  // ==================== EMAIL TEMPLATES ====================
+  // ==================== SMS TEMPLATES ====================
 
   @Post('templates')
   async createTemplate(
-    @Body() data: CreateEmailTemplateDto,
+    @Body() data: CreateSMSTemplateDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     
-    return this.emailService.createTemplate(data, userId);
+    return this.smsService.createTemplate(data, userId);
   }
 
   @Get('templates')
   async getTemplates(
-    @Query() query: EmailTemplateQueryDto,
+    @Query() query: SMSTemplateQueryDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     
-    return this.emailService.getTemplates(query, userId);
+    return this.smsService.getTemplates(query, userId);
   }
 
   @Get('templates/:id')
@@ -160,18 +160,18 @@ export class EmailController {
   ) {
     const userId = req.user.id;
     
-    return this.emailService.getTemplateById(id, userId);
+    return this.smsService.getTemplateById(id, userId);
   }
 
   @Put('templates/:id')
   async updateTemplate(
     @Param('id') id: string,
-    @Body() data: UpdateEmailTemplateDto,
+    @Body() data: UpdateSMSTemplateDto,
     @Request() req: any,
   ) {
     const userId = req.user.id;
     
-    return this.emailService.updateTemplate(id, data, userId);
+    return this.smsService.updateTemplate(id, data, userId);
   }
 
   @Delete('templates/:id')
@@ -182,26 +182,26 @@ export class EmailController {
   ) {
     const userId = req.user.id;
     
-    return this.emailService.deleteTemplate(id, userId);
+    return this.smsService.deleteTemplate(id, userId);
   }
 
-  // ==================== EMAIL PROVIDERS ====================
+  // ==================== SMS PROVIDERS ====================
 
   @Post('providers')
   async createProvider(
-    @Body() data: CreateEmailProviderDto,
+    @Body() data: CreateSMSProviderDto,
     @Request() req: any,
   ) {
     const organizationId = req.user.organizationId;
     
-    return this.emailService.createProvider(data, organizationId);
+    return this.smsService.createProvider(data, organizationId);
   }
 
   @Get('providers')
   async getProviders(@Request() req: any) {
     const organizationId = req.user.organizationId;
     
-    return this.emailService.getProviders(organizationId);
+    return this.smsService.getProviders(organizationId);
   }
 
   @Get('providers/:id')
@@ -211,18 +211,18 @@ export class EmailController {
   ) {
     const organizationId = req.user.organizationId;
     
-    return this.emailService.getProviderById(id, organizationId);
+    return this.smsService.getProviderById(id, organizationId);
   }
 
   @Put('providers/:id')
   async updateProvider(
     @Param('id') id: string,
-    @Body() data: UpdateEmailProviderDto,
+    @Body() data: UpdateSMSProviderDto,
     @Request() req: any,
   ) {
     const organizationId = req.user.organizationId;
     
-    return this.emailService.updateProvider(id, data, organizationId);
+    return this.smsService.updateProvider(id, data, organizationId);
   }
 
   @Delete('providers/:id')
@@ -233,21 +233,21 @@ export class EmailController {
   ) {
     const organizationId = req.user.organizationId;
     
-    return this.emailService.deleteProvider(id, organizationId);
+    return this.smsService.deleteProvider(id, organizationId);
   }
 
   @Post('providers/:id/test')
   async testProvider(
     @Param('id') id: string,
-    @Body() data: TestEmailProviderDto,
+    @Body() data: TestSMSProviderDto,
     @Request() req: any,
   ) {
     const organizationId = req.user.organizationId;
     
-    return this.emailService.testProvider(id, data, organizationId);
+    return this.smsService.testProvider(id, data, organizationId);
   }
 
-  // ==================== EMAIL TRACKING ====================
+  // ==================== SMS TRACKING ====================
 
   @Post('track/:campaignId/:contactId/:type')
   async trackActivity(
@@ -256,7 +256,7 @@ export class EmailController {
     @Param('type') type: string,
     @Body() metadata?: any,
   ) {
-    return this.emailService.trackEmailActivity(campaignId, contactId, type, metadata);
+    return this.smsService.trackSMSActivity(campaignId, contactId, type, metadata);
   }
 
   @Post('unsubscribe/:contactId')
@@ -264,6 +264,6 @@ export class EmailController {
     @Param('contactId') contactId: string,
     @Body() body?: { campaignId?: string },
   ) {
-    return this.emailService.unsubscribeContact(contactId, body?.campaignId);
+    return this.smsService.unsubscribeContact(contactId, body?.campaignId);
   }
 }
