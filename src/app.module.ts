@@ -17,6 +17,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { LeadPulseModule } from './leadpulse/leadpulse.module';
 import { EmailModule } from './email/email.module';
+import { SMSModule } from './sms/sms.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -39,6 +40,7 @@ import { PrismaService } from './prisma/prisma.service';
     WorkflowsModule,
     LeadPulseModule,
     EmailModule,
+    SMSModule,
     DashboardModule,
     HealthModule,
     MetricsModule,

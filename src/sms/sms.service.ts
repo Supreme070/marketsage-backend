@@ -1,26 +1,30 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateEmailCampaignDto, UpdateEmailCampaignDto, EmailCampaignQueryDto } from './dto/email-campaign.dto';
-import { CreateEmailTemplateDto, UpdateEmailTemplateDto, EmailTemplateQueryDto } from './dto/email-template.dto';
-import { CreateEmailProviderDto, UpdateEmailProviderDto, TestEmailProviderDto } from './dto/email-provider.dto';
-import { SendEmailCampaignDto, EmailCampaignAnalyticsDto } from './dto/email-campaign.dto';
+import { SMSProviderService } from './sms-provider.service';
+import { CreateSMSCampaignDto, UpdateSMSCampaignDto, SMSCampaignQueryDto } from './dto/sms-campaign.dto';
+import { CreateSMSTemplateDto, UpdateSMSTemplateDto, SMSTemplateQueryDto } from './dto/sms-template.dto';
+import { CreateSMSProviderDto, UpdateSMSProviderDto, TestSMSProviderDto } from './dto/sms-provider.dto';
+import { SendSMSCampaignDto, SMSCampaignAnalyticsDto } from './dto/sms-campaign.dto';
 
 @Injectable()
-export class EmailService {
-  constructor(private readonly prisma: PrismaService) {}
+export class SMSService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly smsProviderService: SMSProviderService,
+  ) {}
 
-  // ==================== EMAIL CAMPAIGNS ====================
+  // ==================== SMS CAMPAIGNS ====================
 
-  async createCampaign(data: CreateEmailCampaignDto, userId: string, organizationId: string) {
+  async createCampaign(data: CreateSMSCampaignDto, userId: string, organizationId: string) {
     const { templateId, listIds, segmentIds, ...campaignData } = data;
 
     // Validate template if provided
     if (templateId) {
-      const template = await this.prisma.emailTemplate.findFirst({
+      const template = await this.prisma.sMSTemplate.findFirst({
         where: { id: templateId, createdById: userId },
       });
       if (!template) {
-        throw new NotFoundException('Email template not found');
+        throw new NotFoundException('SMS template not found');
       }
     }
 
@@ -50,11 +54,10 @@ export class EmailService {
       }
     }
 
-    const campaign = await this.prisma.emailCampaign.create({
+    const campaign = await this.prisma.sMSCampaign.create({
       data: {
         ...campaignData,
         createdById: userId,
-        organizationId: organizationId,
         templateId: templateId,
         lists: listIds ? { connect: listIds.map(id => ({ id })) } : undefined,
         segments: segmentIds ? { connect: segmentIds.map(id => ({ id })) } : undefined,
@@ -63,11 +66,8 @@ export class EmailService {
         createdBy: {
           select: { id: true, name: true, email: true },
         },
-        organization: {
-          select: { id: true, name: true },
-        },
         template: {
-          select: { id: true, name: true, subject: true },
+          select: { id: true, name: true, content: true },
         },
         lists: {
           select: { id: true, name: true },
@@ -84,12 +84,12 @@ export class EmailService {
     return campaign;
   }
 
-  async getCampaigns(query: EmailCampaignQueryDto, userId: string, organizationId: string) {
+  async getCampaigns(query: SMSCampaignQueryDto, userId: string, organizationId: string) {
     const { page = 1, limit = 10, status, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
-      organizationId: organizationId,
+      createdById: userId,
     };
 
     if (status) {
@@ -100,12 +100,12 @@ export class EmailService {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { subject: { contains: search, mode: 'insensitive' } },
+        { from: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     const [campaigns, total] = await Promise.all([
-      this.prisma.emailCampaign.findMany({
+      this.prisma.sMSCampaign.findMany({
         where,
         skip,
         take: limit,
@@ -115,7 +115,7 @@ export class EmailService {
             select: { id: true, name: true, email: true },
           },
           template: {
-            select: { id: true, name: true, subject: true },
+            select: { id: true, name: true, content: true },
           },
           lists: {
             select: { id: true, name: true },
@@ -128,7 +128,7 @@ export class EmailService {
           },
         },
       }),
-      this.prisma.emailCampaign.count({ where }),
+      this.prisma.sMSCampaign.count({ where }),
     ]);
 
     return {
@@ -143,20 +143,17 @@ export class EmailService {
   }
 
   async getCampaignById(id: string, userId: string, organizationId: string) {
-    const campaign = await this.prisma.emailCampaign.findFirst({
+    const campaign = await this.prisma.sMSCampaign.findFirst({
       where: { 
         id: id,
-        organizationId: organizationId,
+        createdById: userId,
       },
       include: {
         createdBy: {
           select: { id: true, name: true, email: true },
         },
-        organization: {
-          select: { id: true, name: true },
-        },
         template: {
-          select: { id: true, name: true, subject: true, content: true },
+          select: { id: true, name: true, content: true },
         },
         lists: {
           select: { id: true, name: true },
@@ -167,7 +164,7 @@ export class EmailService {
         activities: {
           include: {
             contact: {
-              select: { id: true, email: true, firstName: true, lastName: true },
+              select: { id: true, phone: true, firstName: true, lastName: true },
             },
           },
           orderBy: { timestamp: 'desc' },
@@ -179,28 +176,28 @@ export class EmailService {
     });
 
     if (!campaign) {
-      throw new NotFoundException('Email campaign not found');
+      throw new NotFoundException('SMS campaign not found');
     }
 
     return campaign;
   }
 
-  async updateCampaign(id: string, data: UpdateEmailCampaignDto, userId: string, organizationId: string) {
+  async updateCampaign(id: string, data: UpdateSMSCampaignDto, userId: string, organizationId: string) {
     const campaign = await this.getCampaignById(id, userId, organizationId);
 
     const { templateId, listIds, segmentIds, ...updateData } = data;
 
     // Validate template if provided
     if (templateId) {
-      const template = await this.prisma.emailTemplate.findFirst({
+      const template = await this.prisma.sMSTemplate.findFirst({
         where: { id: templateId, createdById: userId },
       });
       if (!template) {
-        throw new NotFoundException('Email template not found');
+        throw new NotFoundException('SMS template not found');
       }
     }
 
-    const updatedCampaign = await this.prisma.emailCampaign.update({
+    const updatedCampaign = await this.prisma.sMSCampaign.update({
       where: { id },
       data: {
         ...updateData,
@@ -219,7 +216,7 @@ export class EmailService {
           select: { id: true, name: true, email: true },
         },
         template: {
-          select: { id: true, name: true, subject: true },
+          select: { id: true, name: true, content: true },
         },
         lists: {
           select: { id: true, name: true },
@@ -239,11 +236,11 @@ export class EmailService {
   async deleteCampaign(id: string, userId: string, organizationId: string) {
     await this.getCampaignById(id, userId, organizationId);
 
-    await this.prisma.emailCampaign.delete({
+    await this.prisma.sMSCampaign.delete({
       where: { id },
     });
 
-    return { message: 'Email campaign deleted successfully' };
+    return { message: 'SMS campaign deleted successfully' };
   }
 
   async duplicateCampaign(id: string, userId: string, organizationId: string) {
@@ -251,12 +248,10 @@ export class EmailService {
     const originalCampaign = await this.getCampaignById(id, userId, organizationId);
 
     // Create the duplicated campaign data
-    const duplicatedData: CreateEmailCampaignDto = {
+    const duplicatedData: CreateSMSCampaignDto = {
       name: `${originalCampaign.name} (Copy)`,
       description: originalCampaign.description || undefined,
-      subject: originalCampaign.subject,
       from: originalCampaign.from,
-      replyTo: originalCampaign.replyTo || undefined,
       content: originalCampaign.content || undefined,
       templateId: originalCampaign.templateId || undefined,
       listIds: originalCampaign.lists?.map(list => list.id),
@@ -267,7 +262,7 @@ export class EmailService {
     const duplicatedCampaign = await this.createCampaign(duplicatedData, userId, organizationId);
 
     return {
-      message: 'Email campaign duplicated successfully',
+      message: 'SMS campaign duplicated successfully',
       originalCampaign: {
         id: originalCampaign.id,
         name: originalCampaign.name,
@@ -280,15 +275,15 @@ export class EmailService {
     };
   }
 
-  async sendCampaign(id: string, data: SendEmailCampaignDto, userId: string, organizationId: string) {
+  async sendCampaign(id: string, data: SendSMSCampaignDto, userId: string, organizationId: string) {
     const campaign = await this.getCampaignById(id, userId, organizationId);
 
     if (campaign.status !== 'DRAFT') {
       throw new BadRequestException('Campaign can only be sent from DRAFT status');
     }
 
-    // Get email provider for the organization
-    const emailProvider = await this.prisma.emailProvider.findFirst({
+    // Get SMS provider for the organization
+    const smsProvider = await this.prisma.sMSProvider.findFirst({
       where: { 
         organizationId: organizationId,
         isActive: true,
@@ -296,8 +291,8 @@ export class EmailService {
       },
     });
 
-    if (!emailProvider) {
-      throw new BadRequestException('No active email provider found for organization');
+    if (!smsProvider) {
+      throw new BadRequestException('No active SMS provider found for organization');
     }
 
     // Get recipients from lists and segments
@@ -307,39 +302,130 @@ export class EmailService {
       throw new BadRequestException('No recipients found for campaign');
     }
 
+    // Update campaign status to SENDING
+    const updatedCampaign = await this.prisma.sMSCampaign.update({
+      where: { id },
+      data: {
+        status: 'SENDING',
+        scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : new Date(),
+      },
+    });
+
+    // Send SMS to each recipient
+    const smsResults = [];
+    const activities: any[] = [];
+    const smsHistoryEntries: any[] = [];
+
+    for (const recipient of recipients) {
+      try {
+        const message = campaign.content || campaign.template?.content || '';
+        
+        // Send SMS via provider
+        const smsResult = await this.smsProviderService.sendSMS(
+          (recipient as any).phone,
+          message,
+          smsProvider
+        );
+
+        smsResults.push(smsResult);
+
+        // Create activity record
+        activities.push({
+          campaignId: campaign.id,
+          contactId: (recipient as any).id,
+          type: smsResult.success ? 'SENT' : 'FAILED',
+          metadata: JSON.stringify({
+            sentAt: new Date(),
+            provider: smsProvider.provider,
+            messageId: smsResult.messageId,
+            error: smsResult.error,
+          }),
+        });
+
+        // Create SMS history entry
+        smsHistoryEntries.push({
+          to: (recipient as any).phone,
+          from: campaign.from,
+          message: message,
+          originalMessage: message,
+          contactId: (recipient as any).id,
+          userId: userId,
+          status: smsResult.success ? 'SENT' : 'FAILED',
+          messageId: smsResult.messageId,
+          error: smsResult.error ? JSON.stringify(smsResult.error) : null,
+          metadata: JSON.stringify({
+            campaignId: campaign.id,
+            provider: smsProvider.provider,
+            cost: smsResult.cost,
+          }),
+        });
+
+      } catch (error) {
+        // Handle individual SMS sending errors
+        activities.push({
+          campaignId: campaign.id,
+          contactId: (recipient as any).id,
+          type: 'FAILED',
+          metadata: JSON.stringify({
+            sentAt: new Date(),
+            provider: smsProvider.provider,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }),
+        });
+
+        smsHistoryEntries.push({
+          to: (recipient as any).phone,
+          from: campaign.from,
+          message: campaign.content || campaign.template?.content || '',
+          originalMessage: campaign.content || campaign.template?.content || '',
+          contactId: (recipient as any).id,
+          userId: userId,
+          status: 'FAILED',
+          error: JSON.stringify({
+            message: error instanceof Error ? error.message : 'Unknown error',
+            code: 'SMS_SENDING_ERROR'
+          }),
+          metadata: JSON.stringify({
+            campaignId: campaign.id,
+            provider: smsProvider.provider,
+          }),
+        });
+      }
+    }
+
+    // Batch create activities and history entries
+    await Promise.all([
+      this.prisma.sMSActivity.createMany({
+        data: activities,
+      }),
+      this.prisma.sMSHistory.createMany({
+        data: smsHistoryEntries,
+      }),
+    ]);
+
     // Update campaign status to SENT
-    const updatedCampaign = await this.prisma.emailCampaign.update({
+    const finalCampaign = await this.prisma.sMSCampaign.update({
       where: { id },
       data: {
         status: 'SENT',
         sentAt: new Date(),
-        scheduledFor: data.scheduledFor || new Date(),
       },
     });
 
-    // Create email activities for tracking
-    const activities = recipients.map((recipient: any) => ({
-      campaignId: campaign.id,
-      contactId: recipient.id,
-      type: 'SENT' as any,
-      metadata: JSON.stringify({
-        sentAt: new Date(),
-        provider: emailProvider.providerType,
-      }),
-    }));
-
-    await this.prisma.emailActivity.createMany({
-      data: activities,
-    });
+    const successCount = smsResults.filter(r => r.success).length;
+    const failureCount = smsResults.filter(r => !r.success).length;
 
     return {
-      message: 'Campaign sent successfully',
-      campaign: updatedCampaign,
+      message: `Campaign sent successfully. ${successCount} sent, ${failureCount} failed.`,
+      campaign: finalCampaign,
       recipientsCount: recipients.length,
+      successCount,
+      failureCount,
+      results: smsResults,
     };
   }
 
-  async getCampaignAnalytics(id: string, query: EmailCampaignAnalyticsDto, userId: string, organizationId: string) {
+  async getCampaignAnalytics(id: string, query: SMSCampaignAnalyticsDto, userId: string, organizationId: string) {
     const campaign = await this.getCampaignById(id, userId, organizationId);
 
     const { startDate, endDate } = query;
@@ -352,7 +438,7 @@ export class EmailService {
       dateFilter.lte = new Date(endDate);
     }
 
-    const activities = await this.prisma.emailActivity.findMany({
+    const activities = await this.prisma.sMSActivity.findMany({
       where: {
         campaignId: id,
         ...(Object.keys(dateFilter).length > 0 && { timestamp: dateFilter }),
@@ -362,19 +448,19 @@ export class EmailService {
     // Calculate analytics
     const analytics = {
       totalSent: activities.filter(a => a.type === 'SENT').length,
-      totalOpened: activities.filter(a => a.type === 'OPENED').length,
-      totalClicked: activities.filter(a => a.type === 'CLICKED').length,
+      totalDelivered: activities.filter(a => a.type === 'DELIVERED').length,
+      totalFailed: activities.filter(a => a.type === 'FAILED').length,
       totalBounced: activities.filter(a => a.type === 'BOUNCED').length,
       totalUnsubscribed: activities.filter(a => a.type === 'UNSUBSCRIBED').length,
-      openRate: 0,
-      clickRate: 0,
+      deliveryRate: 0,
+      failureRate: 0,
       bounceRate: 0,
       unsubscribeRate: 0,
     };
 
     if (analytics.totalSent > 0) {
-      analytics.openRate = (analytics.totalOpened / analytics.totalSent) * 100;
-      analytics.clickRate = (analytics.totalClicked / analytics.totalSent) * 100;
+      analytics.deliveryRate = (analytics.totalDelivered / analytics.totalSent) * 100;
+      analytics.failureRate = (analytics.totalFailed / analytics.totalSent) * 100;
       analytics.bounceRate = (analytics.totalBounced / analytics.totalSent) * 100;
       analytics.unsubscribeRate = (analytics.totalUnsubscribed / analytics.totalSent) * 100;
     }
@@ -383,7 +469,7 @@ export class EmailService {
       campaign: {
         id: campaign.id,
         name: campaign.name,
-        subject: campaign.subject,
+        from: campaign.from,
         status: campaign.status,
         sentAt: campaign.sentAt,
       },
@@ -393,7 +479,7 @@ export class EmailService {
   }
 
   private async getCampaignRecipients(campaignId: string) {
-    const campaign = await this.prisma.emailCampaign.findUnique({
+    const campaign = await this.prisma.sMSCampaign.findUnique({
       where: { id: campaignId },
       include: {
         lists: true,
@@ -416,7 +502,7 @@ export class EmailService {
       });
 
       listMembers.forEach((member: any) => {
-        if (member.contact.email) {
+        if (member.contact.phone) {
           recipients.add(member.contact);
         }
       });
@@ -431,7 +517,7 @@ export class EmailService {
       });
 
       segmentMembers.forEach((member: any) => {
-        if (member.contact.email) {
+        if (member.contact.phone) {
           recipients.add(member.contact);
         }
       });
@@ -440,12 +526,13 @@ export class EmailService {
     return Array.from(recipients);
   }
 
-  // ==================== EMAIL TEMPLATES ====================
+  // ==================== SMS TEMPLATES ====================
 
-  async createTemplate(data: CreateEmailTemplateDto, userId: string) {
-    const template = await this.prisma.emailTemplate.create({
+  async createTemplate(data: CreateSMSTemplateDto, userId: string) {
+    const template = await this.prisma.sMSTemplate.create({
       data: {
         ...data,
+        variables: data.variables ? JSON.stringify(data.variables) : '[]',
         createdById: userId,
       },
       include: {
@@ -461,7 +548,7 @@ export class EmailService {
     return template;
   }
 
-  async getTemplates(query: EmailTemplateQueryDto, userId: string) {
+  async getTemplates(query: SMSTemplateQueryDto, userId: string) {
     const { page = 1, limit = 10, category, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
@@ -476,13 +563,12 @@ export class EmailService {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { subject: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
       ];
     }
 
     const [templates, total] = await Promise.all([
-      this.prisma.emailTemplate.findMany({
+      this.prisma.sMSTemplate.findMany({
         where,
         skip,
         take: limit,
@@ -496,7 +582,7 @@ export class EmailService {
           },
         },
       }),
-      this.prisma.emailTemplate.count({ where }),
+      this.prisma.sMSTemplate.count({ where }),
     ]);
 
     return {
@@ -511,7 +597,7 @@ export class EmailService {
   }
 
   async getTemplateById(id: string, userId: string) {
-    const template = await this.prisma.emailTemplate.findFirst({
+    const template = await this.prisma.sMSTemplate.findFirst({
       where: { 
         id: id,
         createdById: userId,
@@ -530,18 +616,21 @@ export class EmailService {
     });
 
     if (!template) {
-      throw new NotFoundException('Email template not found');
+      throw new NotFoundException('SMS template not found');
     }
 
     return template;
   }
 
-  async updateTemplate(id: string, data: UpdateEmailTemplateDto, userId: string) {
+  async updateTemplate(id: string, data: UpdateSMSTemplateDto, userId: string) {
     await this.getTemplateById(id, userId);
 
-    const updatedTemplate = await this.prisma.emailTemplate.update({
+    const updatedTemplate = await this.prisma.sMSTemplate.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        variables: data.variables ? JSON.stringify(data.variables) : undefined,
+      },
       include: {
         createdBy: {
           select: { id: true, name: true, email: true },
@@ -558,29 +647,36 @@ export class EmailService {
   async deleteTemplate(id: string, userId: string) {
     await this.getTemplateById(id, userId);
 
-    await this.prisma.emailTemplate.delete({
+    await this.prisma.sMSTemplate.delete({
       where: { id },
     });
 
-    return { message: 'Email template deleted successfully' };
+    return { message: 'SMS template deleted successfully' };
   }
 
-  // ==================== EMAIL PROVIDERS ====================
+  // ==================== SMS PROVIDERS ====================
 
-  async createProvider(data: CreateEmailProviderDto, organizationId: string) {
+  async createProvider(data: CreateSMSProviderDto, organizationId: string) {
     // Check if organization already has a provider
-    const existingProvider = await this.prisma.emailProvider.findFirst({
+    const existingProvider = await this.prisma.sMSProvider.findFirst({
       where: { organizationId },
     });
 
     if (existingProvider) {
-      throw new BadRequestException('Organization already has an email provider');
+      throw new BadRequestException('Organization already has an SMS provider');
     }
 
-    const provider = await this.prisma.emailProvider.create({
+    const provider = await this.prisma.sMSProvider.create({
       data: {
         ...data,
         organizationId,
+        credentials: JSON.stringify({
+          apiKey: data.apiKey,
+          apiSecret: data.apiSecret,
+          username: data.username,
+          password: data.password,
+          baseUrl: data.baseUrl,
+        }),
       },
       include: {
         organization: {
@@ -598,7 +694,7 @@ export class EmailService {
       return [];
     }
 
-    const providers = await this.prisma.emailProvider.findMany({
+    const providers = await this.prisma.sMSProvider.findMany({
       where: { organizationId },
       include: {
         organization: {
@@ -611,7 +707,7 @@ export class EmailService {
   }
 
   async getProviderById(id: string, organizationId: string) {
-    const provider = await this.prisma.emailProvider.findFirst({
+    const provider = await this.prisma.sMSProvider.findFirst({
       where: { 
         id: id,
         organizationId: organizationId,
@@ -624,18 +720,45 @@ export class EmailService {
     });
 
     if (!provider) {
-      throw new NotFoundException('Email provider not found');
+      throw new NotFoundException('SMS provider not found');
     }
 
     return provider;
   }
 
-  async updateProvider(id: string, data: UpdateEmailProviderDto, organizationId: string) {
+  async updateProvider(id: string, data: UpdateSMSProviderDto, organizationId: string) {
     await this.getProviderById(id, organizationId);
 
-    const updatedProvider = await this.prisma.emailProvider.update({
+    const updateData: any = { ...data };
+    
+    // Update credentials if any credential fields are provided
+    if (data.apiKey || data.apiSecret || data.username || data.password || data.baseUrl) {
+      const existingProvider = await this.prisma.sMSProvider.findUnique({
+        where: { id },
+      });
+      
+      const existingCredentials = existingProvider ? JSON.parse(existingProvider.credentials as string) : {};
+      
+      updateData.credentials = JSON.stringify({
+        ...existingCredentials,
+        ...(data.apiKey && { apiKey: data.apiKey }),
+        ...(data.apiSecret && { apiSecret: data.apiSecret }),
+        ...(data.username && { username: data.username }),
+        ...(data.password && { password: data.password }),
+        ...(data.baseUrl && { baseUrl: data.baseUrl }),
+      });
+      
+      // Remove individual credential fields from updateData
+      delete updateData.apiKey;
+      delete updateData.apiSecret;
+      delete updateData.username;
+      delete updateData.password;
+      delete updateData.baseUrl;
+    }
+
+    const updatedProvider = await this.prisma.sMSProvider.update({
       where: { id },
-      data,
+      data: updateData,
       include: {
         organization: {
           select: { id: true, name: true },
@@ -649,41 +772,58 @@ export class EmailService {
   async deleteProvider(id: string, organizationId: string) {
     await this.getProviderById(id, organizationId);
 
-    await this.prisma.emailProvider.delete({
+    await this.prisma.sMSProvider.delete({
       where: { id },
     });
 
-    return { message: 'Email provider deleted successfully' };
+    return { message: 'SMS provider deleted successfully' };
   }
 
-  async testProvider(id: string, data: TestEmailProviderDto, organizationId: string) {
+  async testProvider(id: string, data: TestSMSProviderDto, organizationId: string) {
     const provider = await this.getProviderById(id, organizationId);
 
-    // TODO: Implement actual email provider testing
-    // This would involve sending a test email using the provider's configuration
-    
-    const testResult = {
-      success: true,
-      message: 'Test email sent successfully',
-      timestamp: new Date(),
-    };
+    try {
+      // Test the provider connection
+      const isConnected = await this.smsProviderService.testProvider(provider);
+      
+      const testResult = {
+        success: isConnected,
+        message: isConnected ? 'Test SMS sent successfully' : 'Test SMS failed',
+        timestamp: new Date(),
+      };
 
-    // Update provider with test results
-    await this.prisma.emailProvider.update({
-      where: { id },
-      data: {
-        lastTested: new Date(),
-        testStatus: testResult.success ? 'success' : 'failed',
-      },
-    });
+      // Update provider with test results
+      await this.prisma.sMSProvider.update({
+        where: { id },
+        data: {
+          verificationStatus: testResult.success ? 'verified' : 'failed',
+        },
+      });
 
-    return testResult;
+      return testResult;
+    } catch (error) {
+      const testResult = {
+        success: false,
+        message: error instanceof Error ? error.message : 'Test SMS failed',
+        timestamp: new Date(),
+      };
+
+      // Update provider with test results
+      await this.prisma.sMSProvider.update({
+        where: { id },
+        data: {
+          verificationStatus: 'failed',
+        },
+      });
+
+      return testResult;
+    }
   }
 
-  // ==================== EMAIL TRACKING ====================
+  // ==================== SMS TRACKING ====================
 
-  async trackEmailActivity(campaignId: string, contactId: string, type: string, metadata?: any) {
-    const activity = await this.prisma.emailActivity.create({
+  async trackSMSActivity(campaignId: string, contactId: string, type: string, metadata?: any) {
+    const activity = await this.prisma.sMSActivity.create({
       data: {
         campaignId,
         contactId,
@@ -692,10 +832,10 @@ export class EmailService {
       },
       include: {
         campaign: {
-          select: { id: true, name: true, subject: true },
+          select: { id: true, name: true, from: true },
         },
         contact: {
-          select: { id: true, email: true, firstName: true, lastName: true },
+          select: { id: true, phone: true, firstName: true, lastName: true },
         },
       },
     });
@@ -715,7 +855,7 @@ export class EmailService {
 
     // Create unsubscribe activity if campaign is specified
     if (campaignId) {
-      await this.prisma.emailActivity.create({
+      await this.prisma.sMSActivity.create({
         data: {
           campaignId,
           contactId,
