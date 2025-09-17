@@ -3,9 +3,10 @@ import { AIController } from './ai.controller';
 import { AITestController } from './ai-test.controller';
 import { AIService } from './ai.service';
 import { QueueModule } from '../queue/queue.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [QueueModule],
+  imports: [QueueModule, PrismaModule],
   controllers: [AIController, AITestController],
   providers: [AIService],
   exports: [AIService],
