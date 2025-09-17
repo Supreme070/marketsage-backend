@@ -23,7 +23,8 @@ import { AwsSesService } from './aws-ses.service';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        // Use NEXTAUTH_SECRET to match frontend JWT secret
+        secret: configService.get<string>('NEXTAUTH_SECRET') || configService.get<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get<string>('JWT_EXPIRES_IN', '24h'),
         },
