@@ -1,0 +1,282 @@
+// Multi-Channel Campaign Models for Phase 5 - Advanced Features
+
+// Unified Campaign model for multi-channel orchestration
+model UnifiedCampaign {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  type           CampaignType   @default(MULTI_CHANNEL)
+  status         CampaignStatus @default(DRAFT)
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdById    String
+  organizationId String
+
+  // Campaign Configuration
+  channels       String[]       // ["email", "sms", "whatsapp"]
+  priority       Int            @default(1) // 1 = highest priority
+  budget         Float?         // Campaign budget limit
+  costPerMessage Float?         // Cost per message across channels
+  
+  // A/B Testing Configuration
+  abTestEnabled  Boolean        @default(false)
+  abTestVariants String?        // JSON string for A/B test variants
+  abTestWinner   String?        // Winner variant ID
+  
+  // Advanced Scheduling
+  recurrence     RecurrenceType @default(ONE_TIME)
+  recurrenceData String?        // JSON string for recurrence settings
+  timezone       String         @default("UTC")
+  
+  // Performance Tracking
+  totalSent      Int            @default(0)
+  totalDelivered Int            @default(0)
+  totalOpened    Int            @default(0)
+  totalClicked   Int            @default(0)
+  totalReplied   Int            @default(0)
+  totalFailed    Int            @default(0)
+  
+  // Relations
+  createdBy      User           @relation("UnifiedCampaignCreator", fields: [createdById], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  lists          List[]         @relation("UnifiedCampaignLists")
+  segments       Segment[]      @relation("UnifiedCampaignSegments")
+  
+  // Channel-specific campaigns
+  emailCampaigns    EmailCampaign[]
+  smsCampaigns      SMSCampaign[]
+  whatsappCampaigns WhatsAppCampaign[]
+  
+  // Activities and Analytics
+  activities        UnifiedCampaignActivity[]
+  abTests           CampaignABTest[]
+  performance       CampaignPerformance[]
+  
+  @@index([organizationId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// A/B Test model for campaign optimization
+model CampaignABTest {
+  id              String         @id @default(cuid())
+  campaignId      String
+  name            String
+  description     String?
+  status          ABTestStatus   @default(DRAFT)
+  startDate       DateTime?
+  endDate         DateTime?
+  winnerCriteria  WinnerCriteria @default(HIGHEST_OPEN_RATE)
+  confidenceLevel Float          @default(95.0) // Statistical confidence level
+  minSampleSize   Int            @default(1000) // Minimum sample size per variant
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Test Results
+  winnerVariant   String?        // Winning variant ID
+  statisticalSignificance Float?  // Statistical significance percentage
+  testResults     String?        // JSON string for detailed results
+  
+  // Relations
+  campaign        UnifiedCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  variants        ABTestVariant[]
+  
+  @@index([campaignId])
+  @@index([status])
+}
+
+// A/B Test Variant model
+model ABTestVariant {
+  id          String      @id @default(cuid())
+  abTestId    String
+  name        String
+  description String?
+  variantType VariantType // CONTENT, SUBJECT, SENDER, TIMING, CHANNEL
+  config      String      // JSON string for variant configuration
+  weight      Float       @default(50.0) // Traffic allocation percentage
+  isControl   Boolean     @default(false) // Is this the control variant?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Performance Metrics
+  sent        Int         @default(0)
+  delivered   Int         @default(0)
+  opened      Int         @default(0)
+  clicked     Int         @default(0)
+  replied     Int         @default(0)
+  failed      Int         @default(0)
+  
+  // Relations
+  abTest      CampaignABTest @relation(fields: [abTestId], references: [id], onDelete: Cascade)
+  
+  @@index([abTestId])
+}
+
+// Unified Campaign Activity model
+model UnifiedCampaignActivity {
+  id         String       @id @default(cuid())
+  campaignId String
+  contactId  String
+  channel    ChannelType  // email, sms, whatsapp
+  type       ActivityType
+  timestamp  DateTime     @default(now())
+  metadata   String?      // JSON string
+  
+  // Relations
+  campaign   UnifiedCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact    Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@index([campaignId])
+  @@index([contactId])
+  @@index([channel])
+  @@index([timestamp])
+}
+
+// Campaign Performance model for analytics
+model CampaignPerformance {
+  id              String         @id @default(cuid())
+  campaignId      String
+  channel         ChannelType
+  date            DateTime
+  sent            Int            @default(0)
+  delivered       Int            @default(0)
+  opened          Int            @default(0)
+  clicked         Int            @default(0)
+  replied         Int            @default(0)
+  failed          Int            @default(0)
+  unsubscribed    Int            @default(0)
+  bounced         Int            @default(0)
+  cost            Float          @default(0)
+  revenue         Float          @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Relations
+  campaign        UnifiedCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@index([campaignId])
+  @@index([channel])
+  @@index([date])
+  @@unique([campaignId, channel, date])
+}
+
+// Campaign Workflow model for automation
+model CampaignWorkflow {
+  id              String         @id @default(cuid())
+  campaignId      String
+  name            String
+  description     String?
+  status          WorkflowStatus @default(DRAFT)
+  triggerType     TriggerType
+  triggerConfig   String         // JSON string for trigger configuration
+  conditions      String?        // JSON string for workflow conditions
+  actions         String         // JSON string for workflow actions
+  isActive        Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  // Relations
+  campaign        UnifiedCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  executions      WorkflowExecution[]
+  
+  @@index([campaignId])
+  @@index([status])
+}
+
+// Workflow Execution model
+model WorkflowExecution {
+  id           String            @id @default(cuid())
+  workflowId   String
+  contactId    String
+  status       ExecutionStatus   @default(PENDING)
+  startedAt    DateTime          @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+  result       String?           // JSON string for execution result
+  
+  // Relations
+  workflow     CampaignWorkflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  contact      Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@index([workflowId])
+  @@index([contactId])
+  @@index([status])
+}
+
+// Enums for multi-channel campaigns
+enum CampaignType {
+  EMAIL_ONLY
+  SMS_ONLY
+  WHATSAPP_ONLY
+  MULTI_CHANNEL
+  SEQUENTIAL
+  PARALLEL
+}
+
+enum ChannelType {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum RecurrenceType {
+  ONE_TIME
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+enum ABTestStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum WinnerCriteria {
+  HIGHEST_OPEN_RATE
+  HIGHEST_CLICK_RATE
+  HIGHEST_REPLY_RATE
+  HIGHEST_CONVERSION_RATE
+  LOWEST_COST_PER_CONVERSION
+  HIGHEST_REVENUE
+}
+
+enum VariantType {
+  CONTENT
+  SUBJECT
+  SENDER
+  TIMING
+  CHANNEL
+  AUDIENCE
+  CREATIVE
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum TriggerType {
+  TIME_BASED
+  EVENT_BASED
+  CONDITION_BASED
+  MANUAL
+  API_TRIGGER
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
