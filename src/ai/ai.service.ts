@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QueueService } from '../queue/queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChatMessageDto, AnalysisRequestDto, PredictionRequestDto, ContentGenerationDto } from './ai.controller';
+import * as aiDtos from './dto/ai.dto';
 
 @Injectable()
 export class AIService {
@@ -697,6 +698,1368 @@ export class AIService {
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to get admin AI usage analytics: ${err.message}`);
+      throw error;
+    }
+  }
+
+  // ========================================
+  // ADVANCED AI FEATURES - PHASE 4
+  // ========================================
+
+  // Autonomous Segmentation
+  async processAutonomousSegmentation(
+    userId: string,
+    segmentationDto: aiDtos.AutonomousSegmentationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing autonomous segmentation for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'autonomous-segmentation',
+          criteria: segmentationDto.criteria,
+          minSegmentSize: segmentationDto.minSegmentSize || 10,
+          features: segmentationDto.features || [],
+        },
+        correlationId,
+        metadata: {
+          requestType: 'autonomous-segmentation',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '15-30 seconds',
+        message: 'Autonomous segmentation is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process autonomous segmentation for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Customer Journey Optimization
+  async processCustomerJourneyOptimization(
+    userId: string,
+    journeyDto: aiDtos.CustomerJourneyOptimizationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing customer journey optimization for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'customer-journey-optimization',
+          customerId: journeyDto.customerId,
+          touchpoints: journeyDto.touchpoints || [],
+          goals: journeyDto.goals || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'customer-journey-optimization',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 7,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '20-40 seconds',
+        message: 'Customer journey optimization is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process customer journey optimization for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Competitor Analysis
+  async processCompetitorAnalysis(
+    userId: string,
+    competitorDto: aiDtos.CompetitorAnalysisDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing competitor analysis for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'competitor-analysis',
+          competitor: competitorDto.competitor,
+          metrics: competitorDto.metrics || ['market-share', 'pricing', 'features'],
+          timeframe: competitorDto.timeframe || { start: '2024-01-01', end: '2024-12-31' },
+        },
+        correlationId,
+        metadata: {
+          requestType: 'competitor-analysis',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 5,
+        attempts: 3,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '30-60 seconds',
+        message: 'Competitor analysis is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process competitor analysis for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Predictive Analytics
+  async processPredictiveAnalytics(
+    userId: string,
+    predictiveDto: aiDtos.PredictiveAnalyticsDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing predictive analytics for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'prediction',
+        userId,
+        input: {
+          predictionType: predictiveDto.modelType,
+          inputData: predictiveDto.inputData,
+          forecastDays: predictiveDto.forecastDays || 30,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'predictive-analytics',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 8,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '25-45 seconds',
+        message: 'Predictive analytics is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process predictive analytics for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Personalization Engine
+  async processPersonalizationEngine(
+    userId: string,
+    personalizationDto: aiDtos.PersonalizationEngineDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing personalization engine for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'personalization-engine',
+          userId: personalizationDto.userId,
+          preferences: personalizationDto.preferences || {},
+          contentTypes: personalizationDto.contentTypes || ['email', 'sms', 'social'],
+        },
+        correlationId,
+        metadata: {
+          requestType: 'personalization-engine',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '10-20 seconds',
+        message: 'Personalization engine is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process personalization engine for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Brand Reputation Management
+  async processBrandReputation(
+    userId: string,
+    brandDto: aiDtos.BrandReputationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing brand reputation for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'brand-reputation',
+          brandName: brandDto.brandName,
+          platforms: brandDto.platforms || ['twitter', 'facebook', 'instagram', 'linkedin'],
+          timeframe: brandDto.timeframe || { start: '2024-01-01', end: '2024-12-31' },
+        },
+        correlationId,
+        metadata: {
+          requestType: 'brand-reputation',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 5,
+        attempts: 3,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '45-90 seconds',
+        message: 'Brand reputation analysis is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process brand reputation for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Revenue Optimization
+  async processRevenueOptimization(
+    userId: string,
+    revenueDto: aiDtos.RevenueOptimizationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing revenue optimization for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'revenue-optimization',
+          strategy: revenueDto.strategy,
+          parameters: revenueDto.parameters || {},
+          riskTolerance: revenueDto.riskTolerance || 50,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'revenue-optimization',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 9,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '30-60 seconds',
+        message: 'Revenue optimization is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process revenue optimization for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Cross-Channel Intelligence
+  async processCrossChannelIntelligence(
+    userId: string,
+    channelDto: aiDtos.CrossChannelIntelligenceDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing cross-channel intelligence for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'cross-channel-intelligence',
+          channels: channelDto.channels,
+          metrics: channelDto.metrics || {},
+          timeframe: channelDto.timeframe || '30d',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'cross-channel-intelligence',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '20-40 seconds',
+        message: 'Cross-channel intelligence is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process cross-channel intelligence for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Customer Success Automation
+  async processCustomerSuccessAutomation(
+    userId: string,
+    successDto: aiDtos.CustomerSuccessAutomationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing customer success automation for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'customer-success-automation',
+          customerId: successDto.customerId,
+          actions: successDto.actions || [],
+          triggers: successDto.triggers || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'customer-success-automation',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 7,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '15-30 seconds',
+        message: 'Customer success automation is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process customer success automation for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // SEO Content Marketing
+  async processSEOContentMarketing(
+    userId: string,
+    seoDto: aiDtos.SEOContentMarketingDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing SEO content marketing for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'content-generation',
+        userId,
+        input: {
+          contentType: 'seo-content',
+          topic: seoDto.topic,
+          keywords: seoDto.keywords || [],
+          targetAudience: seoDto.targetAudience || 'general',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'seo-content-marketing',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 4,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '20-40 seconds',
+        message: 'SEO content marketing is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process SEO content marketing for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Social Media Management
+  async processSocialMediaManagement(
+    userId: string,
+    socialDto: aiDtos.SocialMediaManagementDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing social media management for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'content-generation',
+        userId,
+        input: {
+          contentType: 'social-media',
+          platform: socialDto.platform,
+          content: socialDto.content || {},
+          schedule: socialDto.schedule || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'social-media-management',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 4,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '15-30 seconds',
+        message: 'Social media management is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process social media management for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Multimodal Intelligence
+  async processMultimodalIntelligence(
+    userId: string,
+    multimodalDto: aiDtos.MultimodalIntelligenceDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing multimodal intelligence for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'multimodal-intelligence',
+          type: multimodalDto.type,
+          data: multimodalDto.data,
+          analysisType: multimodalDto.analysisType || 'comprehensive',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'multimodal-intelligence',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 8,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '30-60 seconds',
+        message: 'Multimodal intelligence is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process multimodal intelligence for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Federated Learning
+  async processFederatedLearning(
+    userId: string,
+    federatedDto: aiDtos.FederatedLearningDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing federated learning for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'federated-learning',
+          modelId: federatedDto.modelId,
+          parameters: federatedDto.parameters || {},
+          privacyMode: federatedDto.privacyMode || true,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'federated-learning',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 9,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '60-120 seconds',
+        message: 'Federated learning is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process federated learning for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Autonomous Execution
+  async processAutonomousExecution(
+    userId: string,
+    executionDto: aiDtos.AutonomousExecutionDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing autonomous execution for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'autonomous-execution',
+          taskType: executionDto.taskType,
+          parameters: executionDto.parameters,
+          requireApproval: executionDto.requireApproval || false,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'autonomous-execution',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 10,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '10-30 seconds',
+        message: 'Autonomous execution is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process autonomous execution for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Performance Monitoring
+  async processPerformanceMonitoring(
+    userId: string,
+    monitoringDto: aiDtos.PerformanceMonitoringDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing performance monitoring for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'performance-monitoring',
+          metricType: monitoringDto.metricType,
+          thresholds: monitoringDto.thresholds || {},
+          alerts: monitoringDto.alerts || [],
+        },
+        correlationId,
+        metadata: {
+          requestType: 'performance-monitoring',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 5,
+        attempts: 3,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '5-15 seconds',
+        message: 'Performance monitoring is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process performance monitoring for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Governance
+  async processGovernance(
+    userId: string,
+    governanceDto: aiDtos.GovernanceDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing governance for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'governance',
+          policyType: governanceDto.policyType,
+          rules: governanceDto.rules || {},
+          enforceCompliance: governanceDto.enforceCompliance || true,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'governance',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 8,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '20-40 seconds',
+        message: 'Governance analysis is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process governance for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Error Handling
+  async processErrorHandling(
+    userId: string,
+    errorDto: aiDtos.ErrorHandlingDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing error handling for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'error-handling',
+          errorType: errorDto.errorType,
+          context: errorDto.context || {},
+          recoveryStrategy: errorDto.recoveryStrategy || 'automatic',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'error-handling',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 9,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '5-15 seconds',
+        message: 'Error handling is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process error handling for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Edge Computing
+  async processEdgeComputing(
+    userId: string,
+    edgeDto: aiDtos.EdgeComputingDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing edge computing for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'edge-computing',
+          location: edgeDto.location,
+          requirements: edgeDto.requirements || {},
+          latencyThreshold: edgeDto.latencyThreshold || 100,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'edge-computing',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 7,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '15-30 seconds',
+        message: 'Edge computing is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process edge computing for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Database Optimization
+  async processDatabaseOptimization(
+    userId: string,
+    dbDto: aiDtos.DatabaseOptimizationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing database optimization for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'database-optimization',
+          operation: dbDto.operation,
+          parameters: dbDto.parameters || {},
+          analyzeOnly: dbDto.analyzeOnly || false,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'database-optimization',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '30-60 seconds',
+        message: 'Database optimization is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process database optimization for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Bulk Operations
+  async processBulkOperations(
+    userId: string,
+    bulkDto: aiDtos.BulkOperationsDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing bulk operations for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'bulk-operations',
+          operationType: bulkDto.operationType,
+          items: bulkDto.items,
+          options: bulkDto.options || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'bulk-operations',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 3,
+        attempts: 3,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '60-180 seconds',
+        message: 'Bulk operations are being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process bulk operations for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Delegation
+  async processDelegation(
+    userId: string,
+    delegationDto: aiDtos.DelegationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing delegation for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'delegation',
+          taskId: delegationDto.taskId,
+          assigneeId: delegationDto.assigneeId,
+          instructions: delegationDto.instructions || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'delegation',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '5-15 seconds',
+        message: 'Delegation is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process delegation for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Approval
+  async processApproval(
+    userId: string,
+    approvalDto: aiDtos.ApprovalDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing approval for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'approval',
+          requestId: approvalDto.requestId,
+          status: approvalDto.status,
+          comments: approvalDto.comments || '',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'approval',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 8,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '5-10 seconds',
+        message: 'Approval is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process approval for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Deployment
+  async processDeployment(
+    userId: string,
+    deploymentDto: aiDtos.DeploymentDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing deployment for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'deployment',
+          environment: deploymentDto.environment,
+          configuration: deploymentDto.configuration || {},
+          rollbackOnFailure: deploymentDto.rollbackOnFailure || true,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'deployment',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 9,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '30-90 seconds',
+        message: 'Deployment is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process deployment for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Feedback
+  async processFeedback(
+    userId: string,
+    feedbackDto: aiDtos.FeedbackDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing feedback for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'feedback',
+          feedbackType: feedbackDto.feedbackType,
+          data: feedbackDto.data,
+          userId: feedbackDto.userId || userId,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'feedback',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 4,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '10-20 seconds',
+        message: 'Feedback is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process feedback for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Health Check
+  async processHealthCheck(
+    userId: string,
+    healthDto: aiDtos.HealthCheckDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing health check for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'health-check',
+          components: healthDto.components || ['ai', 'database', 'queue', 'redis'],
+          detailed: healthDto.detailed || false,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'health-check',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 10,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '5-15 seconds',
+        message: 'Health check is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process health check for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Integration
+  async processIntegration(
+    userId: string,
+    integrationDto: aiDtos.IntegrationDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing integration for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'integration',
+          integrationType: integrationDto.integrationType,
+          configuration: integrationDto.configuration || {},
+          testMode: integrationDto.testMode || false,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'integration',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 7,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '20-40 seconds',
+        message: 'Integration is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process integration for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // ML Training
+  async processMLTraining(
+    userId: string,
+    mlDto: aiDtos.MLTrainingDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing ML training for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'ml-training',
+          modelType: mlDto.modelType,
+          trainingData: mlDto.trainingData,
+          hyperparameters: mlDto.hyperparameters || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'ml-training',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 8,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '120-300 seconds',
+        message: 'ML training is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process ML training for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Permissions
+  async processPermissions(
+    userId: string,
+    permissionsDto: aiDtos.PermissionsDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing permissions for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'permissions',
+          userId: permissionsDto.userId,
+          permissions: permissionsDto.permissions,
+          resource: permissionsDto.resource || 'ai',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'permissions',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 9,
+        attempts: 1,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '5-10 seconds',
+        message: 'Permissions are being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process permissions for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Queue Management
+  async processQueue(
+    userId: string,
+    queueDto: aiDtos.QueueDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing queue management for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'queue-management',
+          queueName: queueDto.queueName,
+          options: queueDto.options || {},
+          priority: queueDto.priority || 5,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'queue-management',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '10-20 seconds',
+        message: 'Queue management is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process queue management for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // RAG (Retrieval Augmented Generation)
+  async processRAG(
+    userId: string,
+    ragDto: aiDtos.RAGDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing RAG for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'rag',
+          query: ragDto.query,
+          sources: ragDto.sources || [],
+          maxResults: ragDto.maxResults || 5,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'rag',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '15-30 seconds',
+        message: 'RAG is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process RAG for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Reports
+  async processReports(
+    userId: string,
+    reportsDto: aiDtos.ReportsDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing reports for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'reports',
+          reportType: reportsDto.reportType,
+          parameters: reportsDto.parameters || {},
+          format: reportsDto.format || 'json',
+        },
+        correlationId,
+        metadata: {
+          requestType: 'reports',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 5,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '30-60 seconds',
+        message: 'Reports are being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process reports for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Strategic
+  async processStrategic(
+    userId: string,
+    strategicDto: aiDtos.StrategicDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing strategic analysis for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'strategic',
+          strategyType: strategicDto.strategyType,
+          context: strategicDto.context || {},
+          priority: strategicDto.priority || 3,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'strategic',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 8,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '45-90 seconds',
+        message: 'Strategic analysis is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process strategic analysis for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Testing
+  async processTesting(
+    userId: string,
+    testingDto: aiDtos.TestingDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing testing for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'testing',
+          testType: testingDto.testType,
+          testData: testingDto.testData,
+          expectedResults: testingDto.expectedResults || {},
+        },
+        correlationId,
+        metadata: {
+          requestType: 'testing',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 6,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '20-40 seconds',
+        message: 'Testing is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process testing for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Workflow
+  async processWorkflow(
+    userId: string,
+    workflowDto: aiDtos.WorkflowDto,
+    correlationId?: string,
+  ) {
+    try {
+      this.logger.log(`Processing workflow for user ${userId}`);
+
+      const job = await this.queueService.addAITask({
+        type: 'analysis',
+        userId,
+        input: {
+          analysisType: 'workflow',
+          workflowType: workflowDto.workflowType,
+          configuration: workflowDto.configuration || {},
+          autoExecute: workflowDto.autoExecute || false,
+        },
+        correlationId,
+        metadata: {
+          requestType: 'workflow',
+          timestamp: new Date().toISOString(),
+        },
+      }, {
+        priority: 7,
+        attempts: 2,
+      });
+
+      return {
+        jobId: job.id,
+        status: 'processing',
+        estimatedTime: '25-50 seconds',
+        message: 'Workflow is being processed',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to process workflow for user ${userId}:`, error);
       throw error;
     }
   }

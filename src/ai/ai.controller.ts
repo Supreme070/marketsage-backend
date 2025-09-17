@@ -20,6 +20,7 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../types/permissions';
 import { ApiResponse } from '../types';
 import { IsString, IsOptional, IsArray, IsObject, MaxLength } from 'class-validator';
+import * as aiDtos from './dto/ai.dto';
 
 export class ChatMessageDto {
   @IsString()
@@ -481,6 +482,1268 @@ export class AIController {
           timestamp: new Date().toISOString(),
         },
         message: 'Failed to retrieve admin AI usage analytics',
+      };
+    }
+  }
+
+  // ========================================
+  // ADVANCED AI FEATURES - PHASE 4 ENDPOINTS
+  // ========================================
+
+  // Autonomous Segmentation
+  @Post('autonomous-segmentation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(10, 60 * 1000) // 10 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async autonomousSegmentation(
+    @Request() req: any,
+    @Body() segmentationDto: aiDtos.AutonomousSegmentationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processAutonomousSegmentation(
+        req.user.id,
+        segmentationDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Autonomous segmentation request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'AUTONOMOUS_SEGMENTATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process autonomous segmentation request',
+      };
+    }
+  }
+
+  // Customer Journey Optimization
+  @Post('customer-journey-optimization')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(15, 60 * 1000) // 15 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async customerJourneyOptimization(
+    @Request() req: any,
+    @Body() journeyDto: aiDtos.CustomerJourneyOptimizationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processCustomerJourneyOptimization(
+        req.user.id,
+        journeyDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Customer journey optimization request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'CUSTOMER_JOURNEY_OPTIMIZATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process customer journey optimization request',
+      };
+    }
+  }
+
+  // Competitor Analysis
+  @Post('competitor-analysis')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(12, 60 * 1000) // 12 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async competitorAnalysis(
+    @Request() req: any,
+    @Body() competitorDto: aiDtos.CompetitorAnalysisDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processCompetitorAnalysis(
+        req.user.id,
+        competitorDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Competitor analysis request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'COMPETITOR_ANALYSIS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process competitor analysis request',
+      };
+    }
+  }
+
+  // Predictive Analytics
+  @Post('predictive-analytics')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(8, 60 * 1000) // 8 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async predictiveAnalytics(
+    @Request() req: any,
+    @Body() predictiveDto: aiDtos.PredictiveAnalyticsDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processPredictiveAnalytics(
+        req.user.id,
+        predictiveDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Predictive analytics request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'PREDICTIVE_ANALYTICS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process predictive analytics request',
+      };
+    }
+  }
+
+  // Personalization Engine
+  @Post('personalization-engine')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(20, 60 * 1000) // 20 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async personalizationEngine(
+    @Request() req: any,
+    @Body() personalizationDto: aiDtos.PersonalizationEngineDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processPersonalizationEngine(
+        req.user.id,
+        personalizationDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Personalization engine request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'PERSONALIZATION_ENGINE_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process personalization engine request',
+      };
+    }
+  }
+
+  // Brand Reputation Management
+  @Post('brand-reputation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(5, 60 * 1000) // 5 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async brandReputation(
+    @Request() req: any,
+    @Body() brandDto: aiDtos.BrandReputationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processBrandReputation(
+        req.user.id,
+        brandDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Brand reputation analysis request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'BRAND_REPUTATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process brand reputation analysis request',
+      };
+    }
+  }
+
+  // Revenue Optimization
+  @Post('revenue-optimization')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(6, 60 * 1000) // 6 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async revenueOptimization(
+    @Request() req: any,
+    @Body() revenueDto: aiDtos.RevenueOptimizationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processRevenueOptimization(
+        req.user.id,
+        revenueDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Revenue optimization request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'REVENUE_OPTIMIZATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process revenue optimization request',
+      };
+    }
+  }
+
+  // Cross-Channel Intelligence
+  @Post('cross-channel-intelligence')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(15, 60 * 1000) // 15 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async crossChannelIntelligence(
+    @Request() req: any,
+    @Body() channelDto: aiDtos.CrossChannelIntelligenceDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processCrossChannelIntelligence(
+        req.user.id,
+        channelDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Cross-channel intelligence request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'CROSS_CHANNEL_INTELLIGENCE_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process cross-channel intelligence request',
+      };
+    }
+  }
+
+  // Customer Success Automation
+  @Post('customer-success-automation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(18, 60 * 1000) // 18 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async customerSuccessAutomation(
+    @Request() req: any,
+    @Body() successDto: aiDtos.CustomerSuccessAutomationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processCustomerSuccessAutomation(
+        req.user.id,
+        successDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Customer success automation request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'CUSTOMER_SUCCESS_AUTOMATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process customer success automation request',
+      };
+    }
+  }
+
+  // SEO Content Marketing
+  @Post('seo-content-marketing')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(25, 60 * 1000) // 25 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async seoContentMarketing(
+    @Request() req: any,
+    @Body() seoDto: aiDtos.SEOContentMarketingDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processSEOContentMarketing(
+        req.user.id,
+        seoDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'SEO content marketing request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'SEO_CONTENT_MARKETING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process SEO content marketing request',
+      };
+    }
+  }
+
+  // Social Media Management
+  @Post('social-media-management')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async socialMediaManagement(
+    @Request() req: any,
+    @Body() socialDto: aiDtos.SocialMediaManagementDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processSocialMediaManagement(
+        req.user.id,
+        socialDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Social media management request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'SOCIAL_MEDIA_MANAGEMENT_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process social media management request',
+      };
+    }
+  }
+
+  // Multimodal Intelligence
+  @Post('multimodal-intelligence')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(10, 60 * 1000) // 10 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async multimodalIntelligence(
+    @Request() req: any,
+    @Body() multimodalDto: aiDtos.MultimodalIntelligenceDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processMultimodalIntelligence(
+        req.user.id,
+        multimodalDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Multimodal intelligence request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'MULTIMODAL_INTELLIGENCE_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process multimodal intelligence request',
+      };
+    }
+  }
+
+  // Federated Learning
+  @Post('federated-learning')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(3, 60 * 1000) // 3 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async federatedLearning(
+    @Request() req: any,
+    @Body() federatedDto: aiDtos.FederatedLearningDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processFederatedLearning(
+        req.user.id,
+        federatedDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Federated learning request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'FEDERATED_LEARNING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process federated learning request',
+      };
+    }
+  }
+
+  // Autonomous Execution
+  @Post('autonomous-execution')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(5, 60 * 1000) // 5 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async autonomousExecution(
+    @Request() req: any,
+    @Body() executionDto: aiDtos.AutonomousExecutionDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processAutonomousExecution(
+        req.user.id,
+        executionDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Autonomous execution request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'AUTONOMOUS_EXECUTION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process autonomous execution request',
+      };
+    }
+  }
+
+  // Performance Monitoring
+  @Post('performance-monitoring')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(40, 60 * 1000) // 40 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async performanceMonitoring(
+    @Request() req: any,
+    @Body() monitoringDto: aiDtos.PerformanceMonitoringDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processPerformanceMonitoring(
+        req.user.id,
+        monitoringDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Performance monitoring request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'PERFORMANCE_MONITORING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process performance monitoring request',
+      };
+    }
+  }
+
+  // Governance
+  @Post('governance')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(8, 60 * 1000) // 8 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async governance(
+    @Request() req: any,
+    @Body() governanceDto: aiDtos.GovernanceDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processGovernance(
+        req.user.id,
+        governanceDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Governance analysis request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'GOVERNANCE_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process governance analysis request',
+      };
+    }
+  }
+
+  // Error Handling
+  @Post('error-handling')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async errorHandling(
+    @Request() req: any,
+    @Body() errorDto: aiDtos.ErrorHandlingDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processErrorHandling(
+        req.user.id,
+        errorDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Error handling request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ERROR_HANDLING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process error handling request',
+      };
+    }
+  }
+
+  // Edge Computing
+  @Post('edge-computing')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(12, 60 * 1000) // 12 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async edgeComputing(
+    @Request() req: any,
+    @Body() edgeDto: aiDtos.EdgeComputingDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processEdgeComputing(
+        req.user.id,
+        edgeDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Edge computing request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'EDGE_COMPUTING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process edge computing request',
+      };
+    }
+  }
+
+  // Database Optimization
+  @Post('database-optimization')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(6, 60 * 1000) // 6 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async databaseOptimization(
+    @Request() req: any,
+    @Body() dbDto: aiDtos.DatabaseOptimizationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processDatabaseOptimization(
+        req.user.id,
+        dbDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Database optimization request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'DATABASE_OPTIMIZATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process database optimization request',
+      };
+    }
+  }
+
+  // Bulk Operations
+  @Post('bulk-operations')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(2, 60 * 1000) // 2 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async bulkOperations(
+    @Request() req: any,
+    @Body() bulkDto: aiDtos.BulkOperationsDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processBulkOperations(
+        req.user.id,
+        bulkDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Bulk operations request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'BULK_OPERATIONS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process bulk operations request',
+      };
+    }
+  }
+
+  // Delegation
+  @Post('delegation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(25, 60 * 1000) // 25 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async delegation(
+    @Request() req: any,
+    @Body() delegationDto: aiDtos.DelegationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processDelegation(
+        req.user.id,
+        delegationDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Delegation request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'DELEGATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process delegation request',
+      };
+    }
+  }
+
+  // Approval
+  @Post('approval')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async approval(
+    @Request() req: any,
+    @Body() approvalDto: aiDtos.ApprovalDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processApproval(
+        req.user.id,
+        approvalDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Approval request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'APPROVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process approval request',
+      };
+    }
+  }
+
+  // Deployment
+  @Post('deployment')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(3, 60 * 1000) // 3 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async deployment(
+    @Request() req: any,
+    @Body() deploymentDto: aiDtos.DeploymentDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processDeployment(
+        req.user.id,
+        deploymentDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Deployment request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'DEPLOYMENT_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process deployment request',
+      };
+    }
+  }
+
+  // Feedback
+  @Post('feedback')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async feedback(
+    @Request() req: any,
+    @Body() feedbackDto: aiDtos.FeedbackDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processFeedback(
+        req.user.id,
+        feedbackDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Feedback request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'FEEDBACK_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process feedback request',
+      };
+    }
+  }
+
+  // Health Check
+  @Post('health-check')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(60, 60 * 1000) // 60 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async healthCheck(
+    @Request() req: any,
+    @Body() healthDto: aiDtos.HealthCheckDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processHealthCheck(
+        req.user.id,
+        healthDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Health check request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'HEALTH_CHECK_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process health check request',
+      };
+    }
+  }
+
+  // Integration
+  @Post('integration')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(15, 60 * 1000) // 15 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async integration(
+    @Request() req: any,
+    @Body() integrationDto: aiDtos.IntegrationDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processIntegration(
+        req.user.id,
+        integrationDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Integration request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'INTEGRATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process integration request',
+      };
+    }
+  }
+
+  // ML Training
+  @Post('ml-training')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(2, 60 * 1000) // 2 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async mlTraining(
+    @Request() req: any,
+    @Body() mlDto: aiDtos.MLTrainingDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processMLTraining(
+        req.user.id,
+        mlDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'ML training request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ML_TRAINING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process ML training request',
+      };
+    }
+  }
+
+  // Permissions
+  @Post('permissions')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(40, 60 * 1000) // 40 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async permissions(
+    @Request() req: any,
+    @Body() permissionsDto: aiDtos.PermissionsDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processPermissions(
+        req.user.id,
+        permissionsDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Permissions request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'PERMISSIONS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process permissions request',
+      };
+    }
+  }
+
+  // Queue Management
+  @Post('queue')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async queue(
+    @Request() req: any,
+    @Body() queueDto: aiDtos.QueueDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processQueue(
+        req.user.id,
+        queueDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Queue management request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'QUEUE_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process queue management request',
+      };
+    }
+  }
+
+  // RAG (Retrieval Augmented Generation)
+  @Post('rag')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(20, 60 * 1000) // 20 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async rag(
+    @Request() req: any,
+    @Body() ragDto: aiDtos.RAGDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processRAG(
+        req.user.id,
+        ragDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'RAG request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'RAG_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process RAG request',
+      };
+    }
+  }
+
+  // Reports
+  @Post('reports')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(10, 60 * 1000) // 10 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async reports(
+    @Request() req: any,
+    @Body() reportsDto: aiDtos.ReportsDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processReports(
+        req.user.id,
+        reportsDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Reports request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'REPORTS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process reports request',
+      };
+    }
+  }
+
+  // Strategic
+  @Post('strategic')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(5, 60 * 1000) // 5 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async strategic(
+    @Request() req: any,
+    @Body() strategicDto: aiDtos.StrategicDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processStrategic(
+        req.user.id,
+        strategicDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Strategic analysis request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'STRATEGIC_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process strategic analysis request',
+      };
+    }
+  }
+
+  // Testing
+  @Post('testing')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(25, 60 * 1000) // 25 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async testing(
+    @Request() req: any,
+    @Body() testingDto: aiDtos.TestingDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processTesting(
+        req.user.id,
+        testingDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Testing request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'TESTING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process testing request',
+      };
+    }
+  }
+
+  // Workflow
+  @Post('workflow')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(15, 60 * 1000) // 15 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async workflow(
+    @Request() req: any,
+    @Body() workflowDto: aiDtos.WorkflowDto,
+    @Headers('x-correlation-id') correlationId?: string,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.processWorkflow(
+        req.user.id,
+        workflowDto,
+        correlationId,
+      );
+
+      return {
+        success: true,
+        data: result,
+        message: 'Workflow request processed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'WORKFLOW_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to process workflow request',
       };
     }
   }
