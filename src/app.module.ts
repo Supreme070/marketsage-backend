@@ -21,6 +21,14 @@ import { SMSModule } from './sms/sms.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AdminModule } from './admin/admin.module';
+import { SecurityModule } from './security/security.module';
+import { SettingsModule } from './settings/settings.module';
+import { AuditModule } from './audit/audit.module';
+import { BillingModule } from './billing/billing.module';
+import { SupportModule } from './support/support.module';
+import { MessagesModule } from './messages/messages.module';
+import { IncidentsModule } from './incidents/incidents.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -45,8 +53,16 @@ import { PrismaService } from './prisma/prisma.service';
     SMSModule,
     WhatsAppModule,
     CampaignsModule,
-    DashboardModule,
-    HealthModule,
+        DashboardModule,
+        AdminModule,
+        SecurityModule,
+        SettingsModule,
+        AuditModule,
+        BillingModule,
+        SupportModule,
+        MessagesModule,
+        IncidentsModule,
+        HealthModule,
     MetricsModule,
   ],
   controllers: [AppController],

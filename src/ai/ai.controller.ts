@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UseGuards,
   Request,
@@ -257,6 +258,229 @@ export class AIController {
           timestamp: new Date().toISOString(),
         },
         message: 'Failed to process Supreme-v3 request',
+      };
+    }
+  }
+
+  // Admin endpoints
+  @Get('admin')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminAIData(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const [stats, models, costs, operations, safetyIncidents] = await Promise.all([
+        this.aiService.getAdminAIStats(),
+        this.aiService.getAdminAIModels(),
+        this.aiService.getAdminAICosts(),
+        this.aiService.getAdminAIOperations(),
+        this.aiService.getAdminSafetyIncidents(),
+      ]);
+
+      return {
+        success: true,
+        data: {
+          stats,
+          models,
+          costs,
+          operations,
+          safetyIncidents,
+        },
+        message: 'Admin AI data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_AI_DATA_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin AI data',
+      };
+    }
+  }
+
+  @Get('admin/stats')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminAIStats(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const stats = await this.aiService.getAdminAIStats();
+
+      return {
+        success: true,
+        data: stats,
+        message: 'Admin AI stats retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_AI_STATS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin AI stats',
+      };
+    }
+  }
+
+  @Get('admin/models')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminAIModels(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const models = await this.aiService.getAdminAIModels();
+
+      return {
+        success: true,
+        data: models,
+        message: 'Admin AI models retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_AI_MODELS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin AI models',
+      };
+    }
+  }
+
+  @Get('admin/costs')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminAICosts(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const costs = await this.aiService.getAdminAICosts();
+
+      return {
+        success: true,
+        data: costs,
+        message: 'Admin AI costs retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_AI_COSTS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin AI costs',
+      };
+    }
+  }
+
+  @Get('admin/operations')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminAIOperations(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const operations = await this.aiService.getAdminAIOperations();
+
+      return {
+        success: true,
+        data: operations,
+        message: 'Admin AI operations retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_AI_OPERATIONS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin AI operations',
+      };
+    }
+  }
+
+  @Get('admin/safety-incidents')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminSafetyIncidents(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const safetyIncidents = await this.aiService.getAdminSafetyIncidents();
+
+      return {
+        success: true,
+        data: safetyIncidents,
+        message: 'Admin safety incidents retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_SAFETY_INCIDENTS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin safety incidents',
+      };
+    }
+  }
+
+  @Get('admin/usage-analytics')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(30, 60 * 1000) // 30 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAdminAIUsageAnalytics(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const analytics = await this.aiService.getAdminAIUsageAnalytics();
+
+      return {
+        success: true,
+        data: analytics,
+        message: 'Admin AI usage analytics retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'ADMIN_AI_USAGE_ANALYTICS_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve admin AI usage analytics',
       };
     }
   }

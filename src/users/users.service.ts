@@ -74,16 +74,38 @@ export class UsersService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10, search?: string) {
+  async findAll(page: number = 1, limit: number = 10, search?: string, role?: string, status?: string) {
     try {
       const skip = (page - 1) * limit;
       
-      const where = search ? {
-        OR: [
+      const where: any = {};
+      
+      if (search) {
+        where.OR = [
           { email: { contains: search, mode: 'insensitive' as const } },
           { name: { contains: search, mode: 'insensitive' as const } },
-        ],
-      } : {};
+        ];
+      }
+      
+      if (role && role !== 'all') {
+        where.role = role;
+      }
+      
+      if (status && status !== 'all') {
+        switch (status) {
+          case 'active':
+            where.emailVerified = { not: null };
+            where.isSuspended = false;
+            break;
+          case 'pending_verification':
+            where.emailVerified = null;
+            where.isSuspended = false;
+            break;
+          case 'suspended':
+            where.isSuspended = true;
+            break;
+        }
+      }
 
       const [users, total] = await Promise.all([
         this.prisma.user.findMany({
@@ -98,6 +120,8 @@ export class UsersService {
             organizationId: true,
             emailVerified: true,
             image: true,
+            isSuspended: true,
+            lastLoginAt: true,
             createdAt: true,
             updatedAt: true,
             organization: {
@@ -389,6 +413,120 @@ export class UsersService {
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to change password for user ${id}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminStats() {
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const [total, active, suspended, pending] = await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({
+          where: {
+            emailVerified: { not: null },
+            isSuspended: false,
+            lastLoginAt: {
+              gte: thirtyDaysAgo,
+            },
+          },
+        }),
+        this.prisma.user.count({
+          where: {
+            isSuspended: true,
+          },
+        }),
+        this.prisma.user.count({
+          where: {
+            emailVerified: null,
+            isSuspended: false,
+          },
+        }),
+      ]);
+
+      return {
+        total,
+        active,
+        suspended,
+        pending,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin stats: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async suspendUser(id: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.isSuspended) {
+        throw new ConflictException('User is already suspended');
+      }
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: { isSuspended: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isSuspended: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`User suspended: ${id} (${user.email})`);
+      return updatedUser;
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to suspend user ${id}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async activateUser(id: string) {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (!user.isSuspended) {
+        throw new ConflictException('User is not suspended');
+      }
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: { isSuspended: false },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isSuspended: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`User activated: ${id} (${user.email})`);
+      return updatedUser;
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to activate user ${id}: ${err.message}`);
       throw error;
     }
   }

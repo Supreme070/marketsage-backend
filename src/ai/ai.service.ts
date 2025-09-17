@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { QueueService } from '../queue/queue.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ChatMessageDto, AnalysisRequestDto, PredictionRequestDto, ContentGenerationDto } from './ai.controller';
 
 @Injectable()
 export class AIService {
   private readonly logger = new Logger(AIService.name);
 
-  constructor(private readonly queueService: QueueService) {}
+  constructor(
+    private readonly queueService: QueueService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async processChat(
     userId: string,
@@ -361,6 +365,338 @@ export class AIService {
       return mockGenericResponse;
     } catch (error) {
       this.logger.error(`Failed to process Supreme-v3 generic request for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Admin-specific methods
+  async getAdminAIStats() {
+    try {
+      // Get AI usage statistics from queue service
+      const queueStats = await this.queueService.getQueueStats();
+      
+      // Mock AI usage stats - in a real implementation, these would come from AI usage tracking
+      const totalRequests = queueStats.ai.completed + queueStats.ai.failed;
+      const requestsToday = Math.floor(totalRequests * 0.15); // Mock: 15% of total requests today
+      const requestsThisMonth = Math.floor(totalRequests * 0.8); // Mock: 80% of total requests this month
+      
+      return {
+        totalRequests,
+        requestsToday,
+        requestsThisMonth,
+        totalCost: 1250.75, // Mock cost data
+        costToday: 45.20,
+        costThisMonth: 890.30,
+        averageResponseTime: 2.3,
+        successRate: 97.8,
+        activeModels: 4,
+        safetyIncidents: 2,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin AI stats: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminAIModels() {
+    try {
+      // Mock AI models data - in a real implementation, these would come from AI model management
+      return [
+        {
+          id: 'gpt-4-turbo',
+          name: 'GPT-4 Turbo',
+          provider: 'openai',
+          status: 'active',
+          version: '4.0-turbo',
+          requests: 15420,
+          cost: 1250.75,
+          averageResponseTime: 1.8,
+          errorRate: 0.2,
+          accuracy: 94.5,
+          lastUsed: new Date().toISOString(),
+          capabilities: ['chat', 'analysis', 'content-generation'],
+        },
+        {
+          id: 'claude-3-opus',
+          name: 'Claude 3 Opus',
+          provider: 'anthropic',
+          status: 'active',
+          version: '3.0-opus',
+          requests: 8920,
+          cost: 890.30,
+          averageResponseTime: 2.1,
+          errorRate: 0.1,
+          accuracy: 96.2,
+          lastUsed: new Date(Date.now() - 3600000).toISOString(),
+          capabilities: ['analysis', 'reasoning', 'content-generation'],
+        },
+        {
+          id: 'gemini-pro',
+          name: 'Gemini Pro',
+          provider: 'google',
+          status: 'maintenance',
+          version: '1.5-pro',
+          requests: 5430,
+          cost: 320.15,
+          averageResponseTime: 2.8,
+          errorRate: 0.5,
+          accuracy: 92.8,
+          lastUsed: new Date(Date.now() - 7200000).toISOString(),
+          capabilities: ['multimodal', 'analysis', 'prediction'],
+        },
+        {
+          id: 'custom-model',
+          name: 'Custom MarketSage Model',
+          provider: 'custom',
+          status: 'active',
+          version: '2.1',
+          requests: 2340,
+          cost: 150.20,
+          averageResponseTime: 1.5,
+          errorRate: 0.1,
+          accuracy: 98.1,
+          lastUsed: new Date(Date.now() - 1800000).toISOString(),
+          capabilities: ['market-analysis', 'customer-insights', 'campaign-optimization'],
+        },
+      ];
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin AI models: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminAICosts() {
+    try {
+      // Mock cost breakdown data
+      return [
+        {
+          provider: 'OpenAI',
+          model: 'GPT-4 Turbo',
+          requests: 15420,
+          cost: 1250.75,
+          percentage: 45.2,
+          trend: 'up',
+          trendValue: 12.5,
+        },
+        {
+          provider: 'Anthropic',
+          model: 'Claude 3 Opus',
+          requests: 8920,
+          cost: 890.30,
+          percentage: 32.1,
+          trend: 'stable',
+          trendValue: 0.8,
+        },
+        {
+          provider: 'Google',
+          model: 'Gemini Pro',
+          requests: 5430,
+          cost: 320.15,
+          percentage: 11.6,
+          trend: 'down',
+          trendValue: -5.2,
+        },
+        {
+          provider: 'Custom',
+          model: 'MarketSage Model',
+          requests: 2340,
+          cost: 150.20,
+          percentage: 5.4,
+          trend: 'up',
+          trendValue: 8.3,
+        },
+        {
+          provider: 'OpenAI',
+          model: 'GPT-3.5 Turbo',
+          requests: 1890,
+          cost: 89.40,
+          percentage: 3.2,
+          trend: 'down',
+          trendValue: -15.7,
+        },
+      ];
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin AI costs: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminSafetyIncidents() {
+    try {
+      // Mock safety incidents data
+      return [
+        {
+          id: 'SAFETY-001',
+          type: 'content_violation',
+          severity: 'medium',
+          description: 'Inappropriate content detected in user-generated prompt',
+          model: 'GPT-4 Turbo',
+          user: 'user-123',
+          organization: 'Acme Corp',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          status: 'resolved',
+          action: 'Content filtered and user warned',
+          details: {
+            prompt: 'Generate content about...',
+            violationType: 'inappropriate_language',
+            confidence: 0.89,
+          },
+        },
+        {
+          id: 'SAFETY-002',
+          type: 'safety_filter',
+          severity: 'low',
+          description: 'Safety filter triggered for potentially harmful request',
+          model: 'Claude 3 Opus',
+          user: 'user-456',
+          organization: 'Globex Inc',
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          status: 'investigating',
+          action: 'Request blocked pending review',
+          details: {
+            prompt: 'Help me with...',
+            filterType: 'harmful_content',
+            confidence: 0.76,
+          },
+        },
+      ];
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin safety incidents: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminAIOperations() {
+    try {
+      // Mock AI operations data
+      return [
+        {
+          id: 'OP-001',
+          type: 'chat',
+          model: 'GPT-4 Turbo',
+          organization: 'Acme Corp',
+          user: 'john.doe@acme.com',
+          prompt: 'Help me analyze customer feedback data...',
+          response: 'Based on the customer feedback analysis...',
+          status: 'completed',
+          startTime: new Date(Date.now() - 1800000).toISOString(),
+          endTime: new Date(Date.now() - 1795000).toISOString(),
+          cost: 0.15,
+          tokens: {
+            input: 450,
+            output: 320,
+            total: 770,
+          },
+          safetyChecks: {
+            passed: true,
+            flags: [],
+          },
+        },
+        {
+          id: 'OP-002',
+          type: 'analysis',
+          model: 'Claude 3 Opus',
+          organization: 'Globex Inc',
+          user: 'jane.smith@globex.com',
+          prompt: 'Analyze campaign performance metrics...',
+          response: 'Campaign analysis shows strong performance...',
+          status: 'completed',
+          startTime: new Date(Date.now() - 3600000).toISOString(),
+          endTime: new Date(Date.now() - 3590000).toISOString(),
+          cost: 0.28,
+          tokens: {
+            input: 680,
+            output: 520,
+            total: 1200,
+          },
+          safetyChecks: {
+            passed: true,
+            flags: [],
+          },
+        },
+        {
+          id: 'OP-003',
+          type: 'content_generation',
+          model: 'Custom MarketSage Model',
+          organization: 'TechStart Inc',
+          user: 'mike.chen@techstart.com',
+          prompt: 'Generate email campaign content for product launch...',
+          response: 'Here\'s compelling email content for your product launch...',
+          status: 'running',
+          startTime: new Date(Date.now() - 300000).toISOString(),
+          endTime: null,
+          cost: 0.0,
+          tokens: {
+            input: 200,
+            output: 0,
+            total: 200,
+          },
+          safetyChecks: {
+            passed: true,
+            flags: [],
+          },
+        },
+        {
+          id: 'OP-004',
+          type: 'prediction',
+          model: 'Gemini Pro',
+          organization: 'DataCorp',
+          user: 'sarah.johnson@datacorp.com',
+          prompt: 'Predict customer churn probability...',
+          response: 'Customer churn prediction analysis...',
+          status: 'failed',
+          startTime: new Date(Date.now() - 5400000).toISOString(),
+          endTime: new Date(Date.now() - 5380000).toISOString(),
+          cost: 0.0,
+          tokens: {
+            input: 150,
+            output: 0,
+            total: 150,
+          },
+          safetyChecks: {
+            passed: false,
+            flags: ['data_privacy_concern'],
+          },
+        },
+      ];
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin AI operations: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminAIUsageAnalytics() {
+    try {
+      // Mock usage analytics data
+      return {
+        byModel: [
+          { model: 'GPT-4 Turbo', requests: 15420, percentage: 45 },
+          { model: 'Claude 3 Opus', requests: 8920, percentage: 26 },
+          { model: 'Gemini Pro', requests: 5430, percentage: 16 },
+          { model: 'Custom Model', requests: 2340, percentage: 7 },
+          { model: 'GPT-3.5 Turbo', requests: 1890, percentage: 6 },
+        ],
+        byType: [
+          { type: 'CHAT', requests: 8430, percentage: 45 },
+          { type: 'ANALYSIS', requests: 6240, percentage: 33 },
+          { type: 'CONTENT_GENERATION', requests: 2890, percentage: 15 },
+          { type: 'PREDICTION', requests: 1340, percentage: 7 },
+        ],
+        peakUsage: {
+          peakHour: '2:00 PM - 3:00 PM',
+          peakDay: 'Wednesday',
+          avgQueueTime: '0.8s',
+          capacityUsed: 78,
+        },
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin AI usage analytics: ${err.message}`);
       throw error;
     }
   }

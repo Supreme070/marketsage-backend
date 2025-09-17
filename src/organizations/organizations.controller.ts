@@ -100,12 +100,14 @@ export class OrganizationsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('search') search?: string,
+    @Query('tier') tier?: string,
+    @Query('status') status?: string,
   ): Promise<ApiResponse> {
     try {
       const pageNum = parseInt(page, 10) || 1;
       const limitNum = parseInt(limit, 10) || 10;
       
-      const result = await this.organizationsService.findAll(pageNum, limitNum, search);
+      const result = await this.organizationsService.findAll(pageNum, limitNum, search, tier, status);
       return {
         success: true,
         data: result,
@@ -118,6 +120,83 @@ export class OrganizationsController {
         error: {
           code: err.name || 'ORGANIZATION_FETCH_ERROR',
           message: err.message || 'Failed to fetch organizations',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Get('admin/stats')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  async getAdminStats(): Promise<ApiResponse> {
+    try {
+      const stats = await this.organizationsService.getAdminStats();
+      return {
+        success: true,
+        data: stats,
+        message: 'Admin organization stats retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: err.name || 'ADMIN_STATS_ERROR',
+          message: err.message || 'Failed to fetch admin stats',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('admin/suspend/:id')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(10, 60 * 1000) // 10 suspensions per minute
+  @HttpCode(HttpStatus.OK)
+  async suspendOrganization(@Param('id') id: string): Promise<ApiResponse> {
+    try {
+      const result = await this.organizationsService.suspendOrganization(id);
+      return {
+        success: true,
+        data: result,
+        message: 'Organization suspended successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: err.name || 'ORGANIZATION_SUSPEND_ERROR',
+          message: err.message || 'Failed to suspend organization',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('admin/activate/:id')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.VIEW_ADMIN)
+  @RateLimit(10, 60 * 1000) // 10 activations per minute
+  @HttpCode(HttpStatus.OK)
+  async activateOrganization(@Param('id') id: string): Promise<ApiResponse> {
+    try {
+      const result = await this.organizationsService.activateOrganization(id);
+      return {
+        success: true,
+        data: result,
+        message: 'Organization activated successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: err.name || 'ORGANIZATION_ACTIVATE_ERROR',
+          message: err.message || 'Failed to activate organization',
           timestamp: new Date().toISOString(),
         },
       };

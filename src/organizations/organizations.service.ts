@@ -55,16 +55,43 @@ export class OrganizationsService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10, search?: string) {
+  async findAll(page: number = 1, limit: number = 10, search?: string, tier?: string, status?: string) {
     try {
       const skip = (page - 1) * limit;
       
-      const where = search ? {
-        OR: [
+      const where: any = {};
+      
+      if (search) {
+        where.OR = [
           { name: { contains: search, mode: 'insensitive' as const } },
           { address: { contains: search, mode: 'insensitive' as const } },
-        ],
-      } : {};
+        ];
+      }
+      
+      if (tier && tier !== 'all') {
+        where.plan = tier;
+      }
+      
+      // Note: Status filtering would need to be implemented based on subscription status
+      // For now, we'll use a simple approach based on plan
+      if (status && status !== 'all') {
+        switch (status) {
+          case 'active':
+            where.plan = { not: 'FREE' };
+            break;
+          case 'trial':
+            where.plan = 'FREE';
+            break;
+          case 'past_due':
+            // This would require subscription status tracking
+            where.plan = { not: 'FREE' };
+            break;
+          case 'cancelled':
+            // This would require subscription status tracking
+            where.plan = 'FREE';
+            break;
+        }
+      }
 
       const [organizations, total] = await Promise.all([
         this.prisma.organization.findMany({
@@ -402,6 +429,119 @@ export class OrganizationsService {
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to get organization users for ${id}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getAdminStats() {
+    try {
+      const [totalOrganizations, activeSubscriptions, paidOrgCount] = await Promise.all([
+        this.prisma.organization.count(),
+        this.prisma.organization.count({
+          where: {
+            plan: { not: 'FREE' },
+          },
+        }),
+        this.prisma.organization.count({
+          where: {
+            plan: { not: 'FREE' },
+          },
+        }),
+      ]);
+
+      // Mock revenue calculation - would need actual subscription data
+      const totalRevenue = paidOrgCount * 50000; // Mock: 50,000 NGN per paid org
+
+      // Calculate average users per organization
+      const orgsWithUsers = await this.prisma.organization.findMany({
+        select: {
+          _count: {
+            select: {
+              users: true,
+            },
+          },
+        },
+      });
+
+      const totalUsers = orgsWithUsers.reduce((sum, org) => sum + org._count.users, 0);
+      const averageUsersPerOrg = totalOrganizations > 0 ? totalUsers / totalOrganizations : 0;
+
+      return {
+        totalOrganizations,
+        activeSubscriptions,
+        totalRevenue,
+        averageUsersPerOrg,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get admin stats: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async suspendOrganization(id: string) {
+    try {
+      const organization = await this.prisma.organization.findUnique({
+        where: { id },
+      });
+
+      if (!organization) {
+        throw new NotFoundException('Organization not found');
+      }
+
+      // For now, we'll simulate suspension by changing the plan to a suspended state
+      // In a real implementation, you'd have a separate suspended field
+      const updatedOrganization = await this.prisma.organization.update({
+        where: { id },
+        data: { plan: 'SUSPENDED' },
+        select: {
+          id: true,
+          name: true,
+          plan: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`Organization suspended: ${id} (${organization.name})`);
+      return updatedOrganization;
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to suspend organization ${id}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async activateOrganization(id: string) {
+    try {
+      const organization = await this.prisma.organization.findUnique({
+        where: { id },
+      });
+
+      if (!organization) {
+        throw new NotFoundException('Organization not found');
+      }
+
+      if (organization.plan !== 'SUSPENDED') {
+        throw new ConflictException('Organization is not suspended');
+      }
+
+      // Reactivate by setting to a default plan
+      const updatedOrganization = await this.prisma.organization.update({
+        where: { id },
+        data: { plan: 'FREE' },
+        select: {
+          id: true,
+          name: true,
+          plan: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`Organization activated: ${id} (${organization.name})`);
+      return updatedOrganization;
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to activate organization ${id}: ${err.message}`);
       throw error;
     }
   }
