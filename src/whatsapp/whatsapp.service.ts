@@ -1,30 +1,46 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { SMSProviderService } from './sms-provider.service';
-import { CreateSMSCampaignDto, UpdateSMSCampaignDto, SMSCampaignQueryDto } from './dto/sms-campaign.dto';
-import { CreateSMSTemplateDto, UpdateSMSTemplateDto, SMSTemplateQueryDto } from './dto/sms-template.dto';
-import { CreateSMSProviderDto, UpdateSMSProviderDto, TestSMSProviderDto } from './dto/sms-provider.dto';
-import { SendSMSCampaignDto, SMSCampaignAnalyticsDto } from './dto/sms-campaign.dto';
+import { WhatsAppProviderService } from './whatsapp-provider.service';
+import { 
+  CreateWhatsAppCampaignDto, 
+  UpdateWhatsAppCampaignDto, 
+  WhatsAppCampaignQueryDto,
+  SendWhatsAppCampaignDto,
+  WhatsAppCampaignAnalyticsDto,
+} from './dto/whatsapp-campaign.dto';
+import { 
+  CreateWhatsAppTemplateDto, 
+  UpdateWhatsAppTemplateDto, 
+  WhatsAppTemplateQueryDto,
+  SubmitWhatsAppTemplateDto,
+  ApproveWhatsAppTemplateDto,
+  RejectWhatsAppTemplateDto,
+} from './dto/whatsapp-campaign.dto';
+import { 
+  CreateWhatsAppProviderDto, 
+  UpdateWhatsAppProviderDto, 
+  TestWhatsAppProviderDto,
+} from './dto/whatsapp-campaign.dto';
 
 @Injectable()
-export class SMSService {
+export class WhatsAppService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smsProviderService: SMSProviderService,
+    private readonly whatsappProviderService: WhatsAppProviderService,
   ) {}
 
-  // ==================== SMS CAMPAIGNS ====================
+  // ==================== WHATSAPP CAMPAIGNS ====================
 
-  async createCampaign(data: CreateSMSCampaignDto, userId: string, organizationId: string | null) {
+  async createCampaign(data: CreateWhatsAppCampaignDto, userId: string, organizationId: string | null) {
     const { templateId, listIds, segmentIds, ...campaignData } = data;
 
     // Validate template if provided
     if (templateId) {
-      const template = await this.prisma.sMSTemplate.findFirst({
+      const template = await this.prisma.whatsAppTemplate.findFirst({
         where: { id: templateId, createdById: userId },
       });
       if (!template) {
-        throw new NotFoundException('SMS template not found');
+        throw new NotFoundException('WhatsApp template not found');
       }
     }
 
@@ -57,7 +73,7 @@ export class SMSService {
       }
     }
 
-    const campaign = await this.prisma.sMSCampaign.create({
+    const campaign = await this.prisma.whatsAppCampaign.create({
       data: {
         ...campaignData,
         createdById: userId,
@@ -87,7 +103,7 @@ export class SMSService {
     return campaign;
   }
 
-  async getCampaigns(query: SMSCampaignQueryDto, userId: string, organizationId: string | null) {
+  async getCampaigns(query: WhatsAppCampaignQueryDto, userId: string, organizationId: string | null) {
     const { page = 1, limit = 10, status, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
@@ -108,7 +124,7 @@ export class SMSService {
     }
 
     const [campaigns, total] = await Promise.all([
-      this.prisma.sMSCampaign.findMany({
+      this.prisma.whatsAppCampaign.findMany({
         where,
         skip,
         take: limit,
@@ -131,7 +147,7 @@ export class SMSService {
           },
         },
       }),
-      this.prisma.sMSCampaign.count({ where }),
+      this.prisma.whatsAppCampaign.count({ where }),
     ]);
 
     return {
@@ -146,7 +162,7 @@ export class SMSService {
   }
 
   async getCampaignById(id: string, userId: string, organizationId: string | null) {
-    const campaign = await this.prisma.sMSCampaign.findFirst({
+    const campaign = await this.prisma.whatsAppCampaign.findFirst({
       where: { 
         id: id,
         createdById: userId,
@@ -179,28 +195,28 @@ export class SMSService {
     });
 
     if (!campaign) {
-      throw new NotFoundException('SMS campaign not found');
+      throw new NotFoundException('WhatsApp campaign not found');
     }
 
     return campaign;
   }
 
-  async updateCampaign(id: string, data: UpdateSMSCampaignDto, userId: string, organizationId: string | null) {
+  async updateCampaign(id: string, data: UpdateWhatsAppCampaignDto, userId: string, organizationId: string | null) {
     const campaign = await this.getCampaignById(id, userId, organizationId);
 
     const { templateId, listIds, segmentIds, ...updateData } = data;
 
     // Validate template if provided
     if (templateId) {
-      const template = await this.prisma.sMSTemplate.findFirst({
+      const template = await this.prisma.whatsAppTemplate.findFirst({
         where: { id: templateId, createdById: userId },
       });
       if (!template) {
-        throw new NotFoundException('SMS template not found');
+        throw new NotFoundException('WhatsApp template not found');
       }
     }
 
-    const updatedCampaign = await this.prisma.sMSCampaign.update({
+    const updatedCampaign = await this.prisma.whatsAppCampaign.update({
       where: { id },
       data: {
         ...updateData,
@@ -239,11 +255,11 @@ export class SMSService {
   async deleteCampaign(id: string, userId: string, organizationId: string | null) {
     await this.getCampaignById(id, userId, organizationId);
 
-    await this.prisma.sMSCampaign.delete({
+    await this.prisma.whatsAppCampaign.delete({
       where: { id },
     });
 
-    return { message: 'SMS campaign deleted successfully' };
+    return { message: 'WhatsApp campaign deleted successfully' };
   }
 
   async duplicateCampaign(id: string, userId: string, organizationId: string | null) {
@@ -251,7 +267,7 @@ export class SMSService {
     const originalCampaign = await this.getCampaignById(id, userId, organizationId);
 
     // Create the duplicated campaign data
-    const duplicatedData: CreateSMSCampaignDto = {
+    const duplicatedData: CreateWhatsAppCampaignDto = {
       name: `${originalCampaign.name} (Copy)`,
       description: originalCampaign.description || undefined,
       from: originalCampaign.from,
@@ -265,7 +281,7 @@ export class SMSService {
     const duplicatedCampaign = await this.createCampaign(duplicatedData, userId, organizationId);
 
     return {
-      message: 'SMS campaign duplicated successfully',
+      message: 'WhatsApp campaign duplicated successfully',
       originalCampaign: {
         id: originalCampaign.id,
         name: originalCampaign.name,
@@ -278,17 +294,17 @@ export class SMSService {
     };
   }
 
-  async sendCampaign(id: string, data: SendSMSCampaignDto, userId: string, organizationId: string | null) {
+  async sendCampaign(id: string, data: SendWhatsAppCampaignDto, userId: string, organizationId: string | null) {
     const campaign = await this.getCampaignById(id, userId, organizationId);
 
     if (campaign.status !== 'DRAFT') {
       throw new BadRequestException('Campaign can only be sent from DRAFT status');
     }
 
-    // Get SMS provider for the organization
-    let smsProvider = null;
+    // Get WhatsApp provider for the organization
+    let whatsappProvider = null;
     if (organizationId) {
-      smsProvider = await this.prisma.sMSProvider.findFirst({
+      whatsappProvider = await this.prisma.whatsAppBusinessConfig.findFirst({
         where: { 
           organizationId: organizationId,
           isActive: true,
@@ -297,8 +313,8 @@ export class SMSService {
       });
     }
 
-    if (!smsProvider) {
-      throw new BadRequestException('No active SMS provider found for organization');
+    if (!whatsappProvider) {
+      throw new BadRequestException('No active WhatsApp provider found for organization');
     }
 
     // Get recipients from lists and segments
@@ -309,7 +325,7 @@ export class SMSService {
     }
 
     // Update campaign status to SENDING
-    const updatedCampaign = await this.prisma.sMSCampaign.update({
+    const updatedCampaign = await this.prisma.whatsAppCampaign.update({
       where: { id },
       data: {
         status: 'SENDING',
@@ -317,83 +333,83 @@ export class SMSService {
       },
     });
 
-    // Send SMS to each recipient
-    const smsResults = [];
+    // Send WhatsApp message to each recipient
+    const whatsappResults = [];
     const activities: any[] = [];
-    const smsHistoryEntries: any[] = [];
+    const whatsappHistoryEntries: any[] = [];
 
     for (const recipient of recipients) {
       try {
         const message = campaign.content || campaign.template?.content || '';
         
-        // Send SMS via provider
-        const smsResult = await this.smsProviderService.sendSMS(
+        // Send WhatsApp message via provider
+        const whatsappResult = await this.whatsappProviderService.sendMessage(
           (recipient as any).phone,
           message,
-          smsProvider
+          whatsappProvider
         );
 
-        smsResults.push(smsResult);
+        whatsappResults.push(whatsappResult);
 
         // Create activity record
         activities.push({
           campaignId: campaign.id,
           contactId: (recipient as any).id,
-          type: smsResult.success ? 'SENT' : 'FAILED',
+          type: whatsappResult.success ? 'SENT' : 'FAILED',
           metadata: JSON.stringify({
             sentAt: new Date(),
-            provider: smsProvider.provider,
-            messageId: smsResult.messageId,
-            error: smsResult.error,
+            provider: 'meta_whatsapp',
+            messageId: whatsappResult.messageId,
+            error: whatsappResult.error,
           }),
         });
 
-        // Create SMS history entry
-        smsHistoryEntries.push({
+        // Create WhatsApp history entry
+        whatsappHistoryEntries.push({
           to: (recipient as any).phone,
-          from: campaign.from,
           message: message,
           originalMessage: message,
           contactId: (recipient as any).id,
+          templateId: campaign.templateId,
           userId: userId,
-          status: smsResult.success ? 'SENT' : 'FAILED',
-          messageId: smsResult.messageId,
-          error: smsResult.error ? JSON.stringify(smsResult.error) : null,
+          status: whatsappResult.success ? 'SENT' : 'FAILED',
+          messageId: whatsappResult.messageId,
+          error: whatsappResult.error ? JSON.stringify(whatsappResult.error) : null,
           metadata: JSON.stringify({
             campaignId: campaign.id,
-            provider: smsProvider.provider,
-            cost: smsResult.cost,
+            provider: 'meta_whatsapp',
+            cost: whatsappResult.cost,
           }),
         });
 
       } catch (error) {
-        // Handle individual SMS sending errors
+        // Handle individual WhatsApp sending errors
         activities.push({
           campaignId: campaign.id,
           contactId: (recipient as any).id,
           type: 'FAILED',
           metadata: JSON.stringify({
             sentAt: new Date(),
-            provider: smsProvider.provider,
+            provider: 'meta_whatsapp',
             error: error instanceof Error ? error.message : 'Unknown error',
           }),
         });
 
-        smsHistoryEntries.push({
+        whatsappHistoryEntries.push({
           to: (recipient as any).phone,
-          from: campaign.from,
           message: campaign.content || campaign.template?.content || '',
           originalMessage: campaign.content || campaign.template?.content || '',
           contactId: (recipient as any).id,
+          templateId: campaign.templateId,
           userId: userId,
           status: 'FAILED',
           error: JSON.stringify({
             message: error instanceof Error ? error.message : 'Unknown error',
-            code: 'SMS_SENDING_ERROR'
+            code: 'WHATSAPP_SENDING_ERROR'
           }),
           metadata: JSON.stringify({
             campaignId: campaign.id,
-            provider: smsProvider.provider,
+            provider: 'meta_whatsapp',
           }),
         });
       }
@@ -401,16 +417,16 @@ export class SMSService {
 
     // Batch create activities and history entries
     await Promise.all([
-      this.prisma.sMSActivity.createMany({
+      this.prisma.whatsAppActivity.createMany({
         data: activities,
       }),
-      this.prisma.sMSHistory.createMany({
-        data: smsHistoryEntries,
+      this.prisma.whatsAppHistory.createMany({
+        data: whatsappHistoryEntries,
       }),
     ]);
 
     // Update campaign status to SENT
-    const finalCampaign = await this.prisma.sMSCampaign.update({
+    const finalCampaign = await this.prisma.whatsAppCampaign.update({
       where: { id },
       data: {
         status: 'SENT',
@@ -418,8 +434,8 @@ export class SMSService {
       },
     });
 
-    const successCount = smsResults.filter(r => r.success).length;
-    const failureCount = smsResults.filter(r => !r.success).length;
+    const successCount = whatsappResults.filter(r => r.success).length;
+    const failureCount = whatsappResults.filter(r => !r.success).length;
 
     return {
       message: `Campaign sent successfully. ${successCount} sent, ${failureCount} failed.`,
@@ -427,11 +443,11 @@ export class SMSService {
       recipientsCount: recipients.length,
       successCount,
       failureCount,
-      results: smsResults,
+      results: whatsappResults,
     };
   }
 
-  async getCampaignAnalytics(id: string, query: SMSCampaignAnalyticsDto, userId: string, organizationId: string | null) {
+  async getCampaignAnalytics(id: string, query: WhatsAppCampaignAnalyticsDto, userId: string, organizationId: string | null) {
     const campaign = await this.getCampaignById(id, userId, organizationId);
 
     const { startDate, endDate } = query;
@@ -444,7 +460,7 @@ export class SMSService {
       dateFilter.lte = new Date(endDate);
     }
 
-    const activities = await this.prisma.sMSActivity.findMany({
+    const activities = await this.prisma.whatsAppActivity.findMany({
       where: {
         campaignId: id,
         ...(Object.keys(dateFilter).length > 0 && { timestamp: dateFilter }),
@@ -455,10 +471,12 @@ export class SMSService {
     const analytics = {
       totalSent: activities.filter(a => a.type === 'SENT').length,
       totalDelivered: activities.filter(a => a.type === 'DELIVERED').length,
+      totalRead: activities.filter(a => a.type === 'READ' as any).length,
       totalFailed: activities.filter(a => a.type === 'FAILED').length,
       totalBounced: activities.filter(a => a.type === 'BOUNCED').length,
       totalUnsubscribed: activities.filter(a => a.type === 'UNSUBSCRIBED').length,
       deliveryRate: 0,
+      readRate: 0,
       failureRate: 0,
       bounceRate: 0,
       unsubscribeRate: 0,
@@ -466,6 +484,7 @@ export class SMSService {
 
     if (analytics.totalSent > 0) {
       analytics.deliveryRate = (analytics.totalDelivered / analytics.totalSent) * 100;
+      analytics.readRate = (analytics.totalRead / analytics.totalSent) * 100;
       analytics.failureRate = (analytics.totalFailed / analytics.totalSent) * 100;
       analytics.bounceRate = (analytics.totalBounced / analytics.totalSent) * 100;
       analytics.unsubscribeRate = (analytics.totalUnsubscribed / analytics.totalSent) * 100;
@@ -485,7 +504,7 @@ export class SMSService {
   }
 
   private async getCampaignRecipients(campaignId: string) {
-    const campaign = await this.prisma.sMSCampaign.findUnique({
+    const campaign = await this.prisma.whatsAppCampaign.findUnique({
       where: { id: campaignId },
       include: {
         lists: true,
@@ -532,10 +551,10 @@ export class SMSService {
     return Array.from(recipients);
   }
 
-  // ==================== SMS TEMPLATES ====================
+  // ==================== WHATSAPP TEMPLATES ====================
 
-  async createTemplate(data: CreateSMSTemplateDto, userId: string) {
-    const template = await this.prisma.sMSTemplate.create({
+  async createTemplate(data: CreateWhatsAppTemplateDto, userId: string) {
+    const template = await this.prisma.whatsAppTemplate.create({
       data: {
         ...data,
         variables: data.variables ? JSON.stringify(data.variables) : '[]',
@@ -554,8 +573,8 @@ export class SMSService {
     return template;
   }
 
-  async getTemplates(query: SMSTemplateQueryDto, userId: string) {
-    const { page = 1, limit = 10, category, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  async getTemplates(query: WhatsAppTemplateQueryDto, userId: string) {
+    const { page = 1, limit = 10, category, search, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -566,6 +585,10 @@ export class SMSService {
       where.category = category;
     }
 
+    if (status) {
+      where.status = status;
+    }
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -574,7 +597,7 @@ export class SMSService {
     }
 
     const [templates, total] = await Promise.all([
-      this.prisma.sMSTemplate.findMany({
+      this.prisma.whatsAppTemplate.findMany({
         where,
         skip,
         take: limit,
@@ -588,7 +611,7 @@ export class SMSService {
           },
         },
       }),
-      this.prisma.sMSTemplate.count({ where }),
+      this.prisma.whatsAppTemplate.count({ where }),
     ]);
 
     return {
@@ -603,7 +626,7 @@ export class SMSService {
   }
 
   async getTemplateById(id: string, userId: string) {
-    const template = await this.prisma.sMSTemplate.findFirst({
+    const template = await this.prisma.whatsAppTemplate.findFirst({
       where: { 
         id: id,
         createdById: userId,
@@ -622,16 +645,16 @@ export class SMSService {
     });
 
     if (!template) {
-      throw new NotFoundException('SMS template not found');
+      throw new NotFoundException('WhatsApp template not found');
     }
 
     return template;
   }
 
-  async updateTemplate(id: string, data: UpdateSMSTemplateDto, userId: string) {
+  async updateTemplate(id: string, data: UpdateWhatsAppTemplateDto, userId: string) {
     await this.getTemplateById(id, userId);
 
-    const updatedTemplate = await this.prisma.sMSTemplate.update({
+    const updatedTemplate = await this.prisma.whatsAppTemplate.update({
       where: { id },
       data: {
         ...data,
@@ -653,39 +676,112 @@ export class SMSService {
   async deleteTemplate(id: string, userId: string) {
     await this.getTemplateById(id, userId);
 
-    await this.prisma.sMSTemplate.delete({
+    await this.prisma.whatsAppTemplate.delete({
       where: { id },
     });
 
-    return { message: 'SMS template deleted successfully' };
+    return { message: 'WhatsApp template deleted successfully' };
   }
 
-  // ==================== SMS PROVIDERS ====================
-
-  async createProvider(data: CreateSMSProviderDto, organizationId: string | null) {
+  async submitTemplate(data: SubmitWhatsAppTemplateDto, userId: string, organizationId: string | null) {
     if (!organizationId) {
-      throw new BadRequestException('Organization ID is required for SMS provider creation');
+      throw new BadRequestException('Organization ID is required for template submission');
     }
+
+    const whatsappProvider = await this.prisma.whatsAppBusinessConfig.findFirst({
+      where: { 
+        organizationId: organizationId,
+        isActive: true,
+      },
+    });
+
+    if (!whatsappProvider) {
+      throw new BadRequestException('No active WhatsApp provider found for organization');
+    }
+
+    // Submit template to Meta WhatsApp Business API
+    const result = await this.whatsappProviderService.submitTemplate(whatsappProvider, data);
+
+    if (result.success) {
+      // Create template record in database
+      const template = await this.prisma.whatsAppTemplate.create({
+        data: {
+          name: data.name,
+          content: JSON.stringify(data.components),
+          variables: '[]',
+          category: data.category,
+          status: 'PENDING',
+          createdById: userId,
+        },
+        include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
+
+      return {
+        message: 'Template submitted successfully',
+        template,
+        submissionResult: result,
+      };
+    } else {
+      throw new BadRequestException(result.error?.message || 'Template submission failed');
+    }
+  }
+
+  async approveTemplate(id: string, data: ApproveWhatsAppTemplateDto, userId: string) {
+    const template = await this.getTemplateById(id, userId);
+
+    const updatedTemplate = await this.prisma.whatsAppTemplate.update({
+      where: { id },
+      data: {
+        status: 'APPROVED',
+      },
+    });
+
+    return {
+      message: 'Template approved successfully',
+      template: updatedTemplate,
+    };
+  }
+
+  async rejectTemplate(id: string, data: RejectWhatsAppTemplateDto, userId: string) {
+    const template = await this.getTemplateById(id, userId);
+
+    const updatedTemplate = await this.prisma.whatsAppTemplate.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+      },
+    });
+
+    return {
+      message: 'Template rejected successfully',
+      template: updatedTemplate,
+    };
+  }
+
+  // ==================== WHATSAPP PROVIDERS ====================
+
+  async createProvider(data: CreateWhatsAppProviderDto, organizationId: string | null) {
+    if (!organizationId) {
+      throw new BadRequestException('Organization ID is required for WhatsApp provider creation');
+    }
+
     // Check if organization already has a provider
-    const existingProvider = await this.prisma.sMSProvider.findFirst({
+    const existingProvider = await this.prisma.whatsAppBusinessConfig.findFirst({
       where: { organizationId },
     });
 
     if (existingProvider) {
-      throw new BadRequestException('Organization already has an SMS provider');
+      throw new BadRequestException('Organization already has a WhatsApp provider');
     }
 
-    const provider = await this.prisma.sMSProvider.create({
+    const provider = await this.prisma.whatsAppBusinessConfig.create({
       data: {
         ...data,
         organizationId,
-        credentials: JSON.stringify({
-          apiKey: data.apiKey,
-          apiSecret: data.apiSecret,
-          username: data.username,
-          password: data.password,
-          baseUrl: data.baseUrl,
-        }),
       },
       include: {
         organization: {
@@ -702,7 +798,7 @@ export class SMSService {
       return [];
     }
 
-    const providers = await this.prisma.sMSProvider.findMany({
+    const providers = await this.prisma.whatsAppBusinessConfig.findMany({
       where: { organizationId },
       include: {
         organization: {
@@ -718,7 +814,8 @@ export class SMSService {
     if (!organizationId) {
       throw new BadRequestException('Organization ID is required');
     }
-    const provider = await this.prisma.sMSProvider.findFirst({
+
+    const provider = await this.prisma.whatsAppBusinessConfig.findFirst({
       where: { 
         id: id,
         organizationId: organizationId,
@@ -731,48 +828,22 @@ export class SMSService {
     });
 
     if (!provider) {
-      throw new NotFoundException('SMS provider not found');
+      throw new NotFoundException('WhatsApp provider not found');
     }
 
     return provider;
   }
 
-  async updateProvider(id: string, data: UpdateSMSProviderDto, organizationId: string | null) {
+  async updateProvider(id: string, data: UpdateWhatsAppProviderDto, organizationId: string | null) {
     if (!organizationId) {
       throw new BadRequestException('Organization ID is required');
     }
+
     await this.getProviderById(id, organizationId);
 
-    const updateData: any = { ...data };
-    
-    // Update credentials if any credential fields are provided
-    if (data.apiKey || data.apiSecret || data.username || data.password || data.baseUrl) {
-      const existingProvider = await this.prisma.sMSProvider.findUnique({
-        where: { id },
-      });
-      
-      const existingCredentials = existingProvider ? JSON.parse(existingProvider.credentials as string) : {};
-      
-      updateData.credentials = JSON.stringify({
-        ...existingCredentials,
-        ...(data.apiKey && { apiKey: data.apiKey }),
-        ...(data.apiSecret && { apiSecret: data.apiSecret }),
-        ...(data.username && { username: data.username }),
-        ...(data.password && { password: data.password }),
-        ...(data.baseUrl && { baseUrl: data.baseUrl }),
-      });
-      
-      // Remove individual credential fields from updateData
-      delete updateData.apiKey;
-      delete updateData.apiSecret;
-      delete updateData.username;
-      delete updateData.password;
-      delete updateData.baseUrl;
-    }
-
-    const updatedProvider = await this.prisma.sMSProvider.update({
+    const updatedProvider = await this.prisma.whatsAppBusinessConfig.update({
       where: { id },
-      data: updateData,
+      data: data,
       include: {
         organization: {
           select: { id: true, name: true },
@@ -787,33 +858,35 @@ export class SMSService {
     if (!organizationId) {
       throw new BadRequestException('Organization ID is required');
     }
+
     await this.getProviderById(id, organizationId);
 
-    await this.prisma.sMSProvider.delete({
+    await this.prisma.whatsAppBusinessConfig.delete({
       where: { id },
     });
 
-    return { message: 'SMS provider deleted successfully' };
+    return { message: 'WhatsApp provider deleted successfully' };
   }
 
-  async testProvider(id: string, data: TestSMSProviderDto, organizationId: string | null) {
+  async testProvider(id: string, data: TestWhatsAppProviderDto, organizationId: string | null) {
     if (!organizationId) {
       throw new BadRequestException('Organization ID is required');
     }
+
     const provider = await this.getProviderById(id, organizationId);
 
     try {
       // Test the provider connection
-      const isConnected = await this.smsProviderService.testProvider(provider);
+      const isConnected = await this.whatsappProviderService.testProvider(provider);
       
       const testResult = {
         success: isConnected,
-        message: isConnected ? 'Test SMS sent successfully' : 'Test SMS failed',
+        message: isConnected ? 'Test WhatsApp message sent successfully' : 'Test WhatsApp message failed',
         timestamp: new Date(),
       };
 
       // Update provider with test results
-      await this.prisma.sMSProvider.update({
+      await this.prisma.whatsAppBusinessConfig.update({
         where: { id },
         data: {
           verificationStatus: testResult.success ? 'verified' : 'failed',
@@ -824,12 +897,12 @@ export class SMSService {
     } catch (error) {
       const testResult = {
         success: false,
-        message: error instanceof Error ? error.message : 'Test SMS failed',
+        message: error instanceof Error ? error.message : 'Test WhatsApp message failed',
         timestamp: new Date(),
       };
 
       // Update provider with test results
-      await this.prisma.sMSProvider.update({
+      await this.prisma.whatsAppBusinessConfig.update({
         where: { id },
         data: {
           verificationStatus: 'failed',
@@ -840,10 +913,10 @@ export class SMSService {
     }
   }
 
-  // ==================== SMS TRACKING ====================
+  // ==================== WHATSAPP TRACKING ====================
 
-  async trackSMSActivity(campaignId: string, contactId: string, type: string, metadata?: any) {
-    const activity = await this.prisma.sMSActivity.create({
+  async trackWhatsAppActivity(campaignId: string, contactId: string, type: string, metadata?: any) {
+    const activity = await this.prisma.whatsAppActivity.create({
       data: {
         campaignId,
         contactId,
@@ -875,7 +948,7 @@ export class SMSService {
 
     // Create unsubscribe activity if campaign is specified
     if (campaignId) {
-      await this.prisma.sMSActivity.create({
+      await this.prisma.whatsAppActivity.create({
         data: {
           campaignId,
           contactId,
@@ -888,5 +961,48 @@ export class SMSService {
     }
 
     return { message: 'Contact unsubscribed successfully' };
+  }
+
+  // ==================== WHATSAPP WEBHOOK HANDLING ====================
+
+  async handleWebhookEvent(event: any, organizationId: string) {
+    try {
+      // Process webhook event using provider service
+      await this.whatsappProviderService.processWebhookEvent(event);
+
+      // Update message statuses in database
+      if (event.entry) {
+        for (const entry of event.entry) {
+          if (entry.changes) {
+            for (const change of entry.changes) {
+              if (change.field === 'messages' && change.value.statuses) {
+                for (const status of change.value.statuses) {
+                  await this.updateMessageStatus(status.id, status.status, status.timestamp);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      throw new BadRequestException('Webhook processing failed');
+    }
+  }
+
+  private async updateMessageStatus(messageId: string, status: string, timestamp: string) {
+    try {
+      await this.prisma.whatsAppHistory.updateMany({
+        where: { messageId },
+        data: {
+          status: status.toUpperCase(),
+          updatedAt: new Date(timestamp),
+        },
+      });
+    } catch (error) {
+      // Log error but don't throw to avoid webhook failures
+      console.error('Error updating message status:', error);
+    }
   }
 }

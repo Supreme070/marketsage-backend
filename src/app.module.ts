@@ -18,6 +18,7 @@ import { WorkflowsModule } from './workflows/workflows.module';
 import { LeadPulseModule } from './leadpulse/leadpulse.module';
 import { EmailModule } from './email/email.module';
 import { SMSModule } from './sms/sms.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PrismaService } from './prisma/prisma.service';
 
@@ -41,6 +42,7 @@ import { PrismaService } from './prisma/prisma.service';
     LeadPulseModule,
     EmailModule,
     SMSModule,
+    WhatsAppModule,
     DashboardModule,
     HealthModule,
     MetricsModule,
