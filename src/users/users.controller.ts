@@ -177,7 +177,7 @@ export class UsersController {
   @Get(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.VIEW_USER)
-  @RequireOwnership('User')
+  @RequireOwnership('user')
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async findOne(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -203,7 +203,7 @@ export class UsersController {
   @Get(':id/stats')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.VIEW_USER)
-  @RequireOwnership('User')
+  @RequireOwnership('user')
   @RateLimit(30, 60 * 1000) // 30 requests per minute
   async getUserStats(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -264,7 +264,7 @@ export class UsersController {
   @Patch(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.UPDATE_USER)
-  @RequireOwnership('User')
+  @RequireOwnership('user')
   @RateLimit(20, 60 * 1000) // 20 updates per minute
   async update(
     @Param('id') id: string,
@@ -318,7 +318,7 @@ export class UsersController {
   @Post(':id/change-password')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.UPDATE_USER)
-  @RequireOwnership('User')
+  @RequireOwnership('user')
   @RateLimit(5, 60 * 1000) // 5 password changes per minute
   @HttpCode(HttpStatus.OK)
   async changePassword(

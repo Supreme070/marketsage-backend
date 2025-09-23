@@ -440,4 +440,82 @@ export class SupportService {
         return ['general'];
     }
   }
+
+  async getUserSupport(userId: string) {
+    try {
+      this.logger.log(`Getting support information for user ${userId}`);
+      
+      // Return mock user support data
+      return {
+        userId,
+        tickets: [
+          {
+            id: 'TICKET-001',
+            subject: 'Email delivery issues',
+            status: 'open',
+            priority: 'high',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: 'TICKET-002',
+            subject: 'Account upgrade request',
+            status: 'resolved',
+            priority: 'medium',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+        knowledgeBase: [
+          {
+            id: 'KB-001',
+            title: 'How to create a campaign',
+            category: 'Campaigns',
+            views: 1250,
+          },
+          {
+            id: 'KB-002',
+            title: 'Email delivery troubleshooting',
+            category: 'Email',
+            views: 890,
+          },
+        ],
+        chatSessions: [
+          {
+            id: 'CHAT-001',
+            status: 'active',
+            startedAt: new Date().toISOString(),
+            agent: 'Support Agent 1',
+          },
+        ],
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting user support for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async createUserSupportTicket(userId: string, ticketData: any) {
+    try {
+      this.logger.log(`Creating support ticket for user ${userId}`);
+      
+      // Return mock created ticket
+      return {
+        id: `TICKET-${Date.now()}`,
+        userId,
+        subject: ticketData.subject,
+        description: ticketData.description,
+        priority: ticketData.priority || 'medium',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error creating support ticket for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
 }

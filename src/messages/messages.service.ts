@@ -278,4 +278,66 @@ export class MessagesService {
     if (failureRate > 0.05 || stuckRate > 0.1) return 'degraded';
     return 'healthy';
   }
+
+  async getUserMessages(userId: string) {
+    try {
+      this.logger.log(`Getting messages for user ${userId}`);
+      
+      // Return mock user messages
+      return {
+        userId,
+        messages: [
+          {
+            id: 'msg_1',
+            type: 'email',
+            subject: 'Welcome to MarketSage',
+            content: 'Thank you for joining MarketSage!',
+            status: 'sent',
+            sentAt: new Date().toISOString(),
+            recipient: 'user@example.com',
+          },
+          {
+            id: 'msg_2',
+            type: 'sms',
+            content: 'Your campaign has been sent successfully',
+            status: 'delivered',
+            sentAt: new Date().toISOString(),
+            recipient: '+1234567890',
+          },
+        ],
+        stats: {
+          total: 2,
+          sent: 2,
+          delivered: 1,
+          failed: 0,
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting user messages for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async sendUserMessage(userId: string, messageData: any) {
+    try {
+      this.logger.log(`Sending message for user ${userId}`);
+      
+      // Return mock sent message
+      return {
+        id: `msg_${Date.now()}`,
+        userId,
+        type: messageData.type || 'email',
+        content: messageData.content,
+        status: 'sent',
+        sentAt: new Date().toISOString(),
+        recipient: messageData.recipient,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error sending message for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
 }

@@ -370,4 +370,75 @@ export class BillingService {
     
     return flags;
   }
+
+  async getUserBilling(userId: string) {
+    try {
+      this.logger.log(`Getting billing information for user ${userId}`);
+      
+      // Return mock user billing data
+      return {
+        userId,
+        subscription: {
+          plan: 'Pro',
+          status: 'active',
+          currentPeriodStart: new Date().toISOString(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 5000,
+          currency: 'NGN',
+        },
+        usage: {
+          campaigns: 15,
+          contacts: 1250,
+          emails: 5000,
+          sms: 1500,
+          whatsapp: 800,
+        },
+        limits: {
+          campaigns: 100,
+          contacts: 10000,
+          emails: 50000,
+          sms: 10000,
+          whatsapp: 5000,
+        },
+        paymentMethod: {
+          type: 'card',
+          last4: '4242',
+          brand: 'visa',
+          expiryMonth: 12,
+          expiryYear: 2025,
+        },
+        invoices: [
+          {
+            id: 'inv_1',
+            amount: 5000,
+            currency: 'NGN',
+            status: 'paid',
+            date: new Date().toISOString(),
+          },
+        ],
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting user billing for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async updateUserBilling(userId: string, billingData: any) {
+    try {
+      this.logger.log(`Updating billing information for user ${userId}`);
+      
+      // Return mock updated billing data
+      return {
+        userId,
+        ...billingData,
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error updating user billing for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
 }

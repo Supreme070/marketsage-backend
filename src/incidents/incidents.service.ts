@@ -481,4 +481,50 @@ export class IncidentsService {
       throw error;
     }
   }
+
+  async getUserIncidents(userId: string) {
+    try {
+      this.logger.log(`Getting incidents information for user ${userId}`);
+      
+      // Return mock user incidents data
+      return {
+        userId,
+        incidents: [
+          {
+            id: 'INC-001',
+            title: 'Email delivery delay',
+            description: 'Emails are being delayed by 5-10 minutes',
+            severity: 'medium',
+            status: 'investigating',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: 'INC-002',
+            title: 'Campaign analytics not updating',
+            description: 'Real-time analytics are not updating',
+            severity: 'low',
+            status: 'resolved',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            resolvedAt: new Date().toISOString(),
+          },
+        ],
+        systemStatus: {
+          overall: 'operational',
+          services: {
+            email: 'degraded',
+            sms: 'operational',
+            whatsapp: 'operational',
+            analytics: 'operational',
+          },
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting user incidents for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
 }

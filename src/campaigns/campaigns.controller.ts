@@ -3,6 +3,7 @@ import {
   Get, 
   Post, 
   Put, 
+  Patch,
   Delete, 
   Body, 
   Param, 
@@ -70,6 +71,20 @@ export class CampaignsController {
   ) {
     return this.unifiedCampaignService.getUnifiedCampaignById(
       id, 
+      req.user.id, 
+      req.user.organizationId
+    );
+  }
+
+  @Patch(':id')
+  async updateCampaign(
+    @Param('id') id: string,
+    @Body() data: UpdateUnifiedCampaignDto,
+    @Request() req: any,
+  ) {
+    return this.unifiedCampaignService.updateUnifiedCampaign(
+      id, 
+      data, 
       req.user.id, 
       req.user.organizationId
     );

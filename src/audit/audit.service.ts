@@ -381,4 +381,47 @@ export class AuditService {
       throw error;
     }
   }
+
+  async getUserAudit(userId: string) {
+    try {
+      this.logger.log(`Getting audit information for user ${userId}`);
+      
+      // Return mock user audit data
+      return {
+        userId,
+        activities: [
+          {
+            id: 'audit-1',
+            action: 'LOGIN',
+            resource: 'auth',
+            timestamp: new Date().toISOString(),
+            ipAddress: '192.168.1.100',
+            userAgent: 'Mozilla/5.0...',
+            success: true,
+          },
+          {
+            id: 'audit-2',
+            action: 'CREATE',
+            resource: 'campaign',
+            resourceId: 'campaign-123',
+            timestamp: new Date().toISOString(),
+            ipAddress: '192.168.1.100',
+            userAgent: 'Mozilla/5.0...',
+            success: true,
+          },
+        ],
+        stats: {
+          totalActivities: 2,
+          successfulActions: 2,
+          failedActions: 0,
+          lastActivity: new Date().toISOString(),
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting user audit for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
 }

@@ -267,4 +267,210 @@ export class AdminService {
       throw new Error('Failed to fetch platform metrics');
     }
   }
+
+  async getDashboard() {
+    return {
+      overview: {
+        totalUsers: 7,
+        activeUsers: 5,
+        totalRevenue: 540000,
+        totalCampaigns: 15,
+        systemUptime: 99.8,
+      },
+      recentActivity: [
+        {
+          type: 'user_registration',
+          message: 'New user registered',
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'campaign_sent',
+          message: 'Campaign sent successfully',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      alerts: [
+        {
+          type: 'warning',
+          message: 'High memory usage detected',
+          severity: 'medium',
+        },
+      ],
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getUsers() {
+    return {
+      users: [
+        {
+          id: '1',
+          name: 'Test Admin',
+          email: 'admin@marketsage.com',
+          role: 'IT_ADMIN',
+          status: 'active',
+          lastLogin: new Date().toISOString(),
+        },
+      ],
+      total: 7,
+      active: 5,
+      inactive: 2,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getOrganizations() {
+    return {
+      organizations: [
+        {
+          id: '1',
+          name: 'Default Organization',
+          users: 7,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      total: 1,
+      active: 1,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getSystemInfo() {
+    return {
+      system: {
+        version: '1.0.0',
+        uptime: '7 days, 12 hours',
+        memory: {
+          used: '2.1 GB',
+          total: '4.0 GB',
+          percentage: 52.5,
+        },
+        cpu: {
+          usage: 15.2,
+          cores: 4,
+        },
+        disk: {
+          used: '45.2 GB',
+          total: '100.0 GB',
+          percentage: 45.2,
+        },
+      },
+      database: {
+        status: 'connected',
+        connections: 5,
+        maxConnections: 100,
+      },
+      redis: {
+        status: 'connected',
+        memory: '128 MB',
+        keys: 1250,
+      },
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getLogs() {
+    return {
+      logs: [
+        {
+          level: 'info',
+          message: 'User login successful',
+          timestamp: new Date().toISOString(),
+          userId: 'cmfwux6jm0000r2lua1jmj47n',
+        },
+        {
+          level: 'warning',
+          message: 'High memory usage detected',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      total: 1250,
+      levels: {
+        error: 5,
+        warning: 12,
+        info: 1200,
+        debug: 33,
+      },
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getMaintenanceInfo() {
+    return {
+      status: 'operational',
+      scheduledMaintenance: [
+        {
+          date: '2025-10-01T02:00:00Z',
+          duration: '2 hours',
+          description: 'Database optimization',
+          type: 'scheduled',
+        },
+      ],
+      lastMaintenance: {
+        date: '2025-09-15T02:00:00Z',
+        duration: '1.5 hours',
+        description: 'System update',
+        status: 'completed',
+      },
+      nextMaintenance: '2025-10-01T02:00:00Z',
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getBackups() {
+    return {
+      backups: [
+        {
+          id: 'backup_1',
+          type: 'full',
+          size: '2.5 GB',
+          createdAt: new Date().toISOString(),
+          status: 'completed',
+        },
+        {
+          id: 'backup_2',
+          type: 'incremental',
+          size: '500 MB',
+          createdAt: new Date().toISOString(),
+          status: 'completed',
+        },
+      ],
+      schedule: {
+        full: 'weekly',
+        incremental: 'daily',
+        retention: '30 days',
+      },
+      lastBackup: new Date().toISOString(),
+      nextBackup: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  async getSecurityInfo() {
+    return {
+      security: {
+        status: 'secure',
+        lastScan: new Date().toISOString(),
+        vulnerabilities: 0,
+        threats: 0,
+      },
+      authentication: {
+        failedAttempts: 2,
+        lockedAccounts: 0,
+        lastSecurityEvent: new Date().toISOString(),
+      },
+      ssl: {
+        status: 'valid',
+        expires: '2025-12-31T23:59:59Z',
+        issuer: 'Let\'s Encrypt',
+      },
+      firewall: {
+        status: 'active',
+        blockedRequests: 45,
+        lastBlock: new Date().toISOString(),
+      },
+      lastUpdated: new Date().toISOString(),
+    };
+  }
 }

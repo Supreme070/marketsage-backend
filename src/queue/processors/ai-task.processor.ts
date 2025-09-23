@@ -186,7 +186,7 @@ export class AITaskProcessor {
       'workflow': 2500,
     };
 
-    const processingTime = processingTimes[analysisType] || 2000;
+    const processingTime = processingTimes[analysisType as keyof typeof processingTimes] || 2000;
     await new Promise(resolve => setTimeout(resolve, processingTime));
     
     // Generate mock results based on analysis type

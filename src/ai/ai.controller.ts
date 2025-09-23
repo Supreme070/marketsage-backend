@@ -10,6 +10,7 @@ import {
   ValidationPipe,
   UsePipes,
   Headers,
+  Logger,
 } from '@nestjs/common';
 import { AIService } from './ai.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -89,7 +90,67 @@ export class ContentGenerationDto {
   transform: true,
 }))
 export class AIController {
+  private readonly logger = new Logger(AIController.name);
+
   constructor(private readonly aiService: AIService) {}
+
+  @Get('intelligence')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @HttpCode(HttpStatus.OK)
+  async getIntelligence(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const intelligence = await this.aiService.getIntelligence(req.user.id);
+      return {
+        success: true,
+        data: intelligence,
+        message: 'AI intelligence retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Get intelligence error: ${err.message}`);
+      return {
+        success: false,
+        error: {
+          code: 'INTELLIGENCE_RETRIEVAL_FAILED',
+          message: 'Failed to retrieve AI intelligence',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('intelligence')
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(10, 60 * 1000) // 10 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async createIntelligence(
+    @Body() data: any,
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const intelligence = await this.aiService.createIntelligence(data, req.user.id);
+      return {
+        success: true,
+        data: intelligence,
+        message: 'AI intelligence created successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Create intelligence error: ${err.message}`);
+      return {
+        success: false,
+        error: {
+          code: 'INTELLIGENCE_CREATION_FAILED',
+          message: 'Failed to create AI intelligence',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
 
   @Post('chat')
   @UseGuards(PermissionsGuard, RateLimitGuard)
@@ -195,6 +256,35 @@ export class AIController {
           timestamp: new Date().toISOString(),
         },
         message: 'Failed to process prediction request',
+      };
+    }
+  }
+
+  @Get('supreme-v3')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getSupremeV3(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getSupremeV3(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Supreme V3 data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'SUPREME_V3_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve Supreme V3 data',
       };
     }
   }
@@ -491,6 +581,35 @@ export class AIController {
   // ========================================
 
   // Autonomous Segmentation
+  @Get('autonomous-segmentation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAutonomousSegmentation(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getAutonomousSegmentation(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Autonomous segmentation data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'AUTONOMOUS_SEGMENTATION_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve autonomous segmentation data',
+      };
+    }
+  }
+
   @Post('autonomous-segmentation')
   @UseGuards(PermissionsGuard, RateLimitGuard)
   @RequirePermissions(Permission.USE_AI_FEATURES)
@@ -528,6 +647,35 @@ export class AIController {
   }
 
   // Customer Journey Optimization
+  @Get('customer-journey-optimization')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getCustomerJourneyOptimization(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getCustomerJourneyOptimization(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Customer journey optimization data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'CUSTOMER_JOURNEY_OPTIMIZATION_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve customer journey optimization data',
+      };
+    }
+  }
+
   @Post('customer-journey-optimization')
   @UseGuards(PermissionsGuard, RateLimitGuard)
   @RequirePermissions(Permission.USE_AI_FEATURES)
@@ -602,6 +750,35 @@ export class AIController {
   }
 
   // Predictive Analytics
+  @Get('predictive-analytics')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getPredictiveAnalytics(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getPredictiveAnalytics(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Predictive analytics data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'PREDICTIVE_ANALYTICS_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve predictive analytics data',
+      };
+    }
+  }
+
   @Post('predictive-analytics')
   @UseGuards(PermissionsGuard, RateLimitGuard)
   @RequirePermissions(Permission.USE_AI_FEATURES)
@@ -1341,7 +1518,156 @@ export class AIController {
     }
   }
 
+  // Content Generation
+  @Get('content-generation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getContentGeneration(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getContentGeneration(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Content generation data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'CONTENT_GENERATION_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve content generation data',
+      };
+    }
+  }
+
+  @Post('content-generation')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(20, 60 * 1000) // 20 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async generateContent(
+    @Request() req: any,
+    @Body() contentDto: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.generateContent(req.user.id, contentDto);
+      return {
+        success: true,
+        data: result,
+        message: 'Content generated successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'CONTENT_GENERATION_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to generate content',
+      };
+    }
+  }
+
+  // Autonomous A/B Testing
+  @Get('autonomous-ab-testing')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getAutonomousABTesting(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getAutonomousABTesting(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Autonomous A/B testing data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'AUTONOMOUS_AB_TESTING_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve autonomous A/B testing data',
+      };
+    }
+  }
+
+  @Post('autonomous-ab-testing')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(10, 60 * 1000) // 10 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async createAutonomousABTest(
+    @Request() req: any,
+    @Body() abTestDto: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.createAutonomousABTest(req.user.id, abTestDto);
+      return {
+        success: true,
+        data: result,
+        message: 'Autonomous A/B test created successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'AUTONOMOUS_AB_TESTING_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to create autonomous A/B test',
+      };
+    }
+  }
+
   // Feedback
+  @Get('feedback')
+  @UseGuards(PermissionsGuard, RateLimitGuard)
+  @RequirePermissions(Permission.USE_AI_FEATURES)
+  @RateLimit(50, 60 * 1000) // 50 requests per minute
+  @HttpCode(HttpStatus.OK)
+  async getFeedback(
+    @Request() req: any,
+  ): Promise<ApiResponse> {
+    try {
+      const result = await this.aiService.getFeedback(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Feedback data retrieved successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      return {
+        success: false,
+        error: {
+          code: 'FEEDBACK_RETRIEVAL_ERROR',
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Failed to retrieve feedback data',
+      };
+    }
+  }
+
   @Post('feedback')
   @UseGuards(PermissionsGuard, RateLimitGuard)
   @RequirePermissions(Permission.USE_AI_FEATURES)

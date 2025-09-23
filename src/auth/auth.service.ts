@@ -267,6 +267,65 @@ export class AuthService {
     return bcrypt.hash(password, this.saltRounds);
   }
 
+  async refreshToken(userId: string): Promise<{ token: string; refreshToken: string }> {
+    try {
+      // Get user from database
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          organizationId: true,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Generate new JWT token
+      const payload: JWTPayload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role as UserRole,
+        organizationId: user.organizationId,
+      };
+
+      const token = this.jwtService.sign(payload, {
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '24h'),
+      });
+
+      const refreshToken = this.jwtService.sign(
+        { sub: user.id, type: 'refresh' },
+        {
+          expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+        }
+      );
+
+      // Store session in Redis
+      await this.redisService.setSession(userId, {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        organizationId: user.organizationId,
+        lastActivity: new Date().toISOString(),
+      });
+
+      this.logger.log(`Token refreshed for user: ${userId}`);
+
+      return {
+        token,
+        refreshToken,
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Token refresh failed for user ${userId}: ${err.message}`);
+      throw new UnauthorizedException('Token refresh failed');
+    }
+  }
+
   async logout(userId: string): Promise<boolean> {
     try {
       // Remove session from Redis
