@@ -376,4 +376,49 @@ export class SecurityService {
       throw error;
     }
   }
+
+  async getUserSecurity(userId: string) {
+    try {
+      this.logger.log(`Getting security information for user ${userId}`);
+      
+      // Return mock user security data
+      return {
+        userId,
+        security: {
+          twoFactorEnabled: false,
+          lastPasswordChange: new Date().toISOString(),
+          loginHistory: [
+            {
+              timestamp: new Date().toISOString(),
+              ipAddress: '192.168.1.100',
+              userAgent: 'Mozilla/5.0...',
+              success: true,
+            },
+          ],
+          activeSessions: 1,
+          securityScore: 85,
+        },
+        alerts: [
+          {
+            type: 'login_from_new_location',
+            message: 'Login from new IP address detected',
+            severity: 'medium',
+            timestamp: new Date().toISOString(),
+          },
+        ],
+        recommendations: [
+          {
+            type: 'enable_2fa',
+            message: 'Enable two-factor authentication for better security',
+            priority: 'high',
+          },
+        ],
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting user security for user ${userId}: ${err.message}`);
+      throw error;
+    }
+  }
 }

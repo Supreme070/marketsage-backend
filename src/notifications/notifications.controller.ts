@@ -105,7 +105,7 @@ export class NotificationsController {
   @Get(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.VIEW_USER)
-  @RequireOwnership('Notification')
+  @RequireOwnership('notification')
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async findOne(
     @Param('id') id: string,
@@ -169,7 +169,7 @@ export class NotificationsController {
   @Patch(':id/read')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.UPDATE_USER)
-  @RequireOwnership('Notification')
+  @RequireOwnership('notification')
   @RateLimit(100, 60 * 1000) // 100 mark as read per minute
   async markAsRead(
     @Param('id') id: string,
@@ -226,7 +226,7 @@ export class NotificationsController {
   @Patch(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.UPDATE_USER)
-  @RequireOwnership('Notification')
+  @RequireOwnership('notification')
   @RateLimit(20, 60 * 1000) // 20 updates per minute
   async update(
     @Param('id') id: string,
@@ -260,7 +260,7 @@ export class NotificationsController {
   @Delete(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.DELETE_USER)
-  @RequireOwnership('Notification')
+  @RequireOwnership('notification')
   @RateLimit(10, 60 * 1000) // 10 deletions per minute
   async remove(
     @Param('id') id: string,

@@ -29,6 +29,7 @@ import { BillingModule } from './billing/billing.module';
 import { SupportModule } from './support/support.module';
 import { MessagesModule } from './messages/messages.module';
 import { IncidentsModule } from './incidents/incidents.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -62,6 +63,7 @@ import { PrismaService } from './prisma/prisma.service';
         SupportModule,
         MessagesModule,
         IncidentsModule,
+        AnalyticsModule,
         HealthModule,
     MetricsModule,
   ],

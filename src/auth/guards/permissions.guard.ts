@@ -53,9 +53,13 @@ export class PermissionsGuard implements CanActivate {
         Permission.VIEW_ORGANIZATION, Permission.MANAGE_ORGANIZATION_SETTINGS
       ],
       IT_ADMIN: [
-        Permission.CREATE_USER, Permission.UPDATE_USER, Permission.DELETE_USER, Permission.VIEW_SYSTEM_LOGS,
-        Permission.MANAGE_SYSTEM_SETTINGS, Permission.MANAGE_SECURITY_SETTINGS, Permission.VIEW_SECURITY_LOGS,
-        Permission.MANAGE_API_KEYS, Permission.CONFIGURE_AI_SETTINGS, Permission.APPROVE_AI_OPERATIONS
+        Permission.CREATE_USER, Permission.UPDATE_USER, Permission.DELETE_USER, Permission.VIEW_USER,
+        Permission.CREATE_ORGANIZATION, Permission.UPDATE_ORGANIZATION, Permission.DELETE_ORGANIZATION, Permission.VIEW_ORGANIZATION,
+        Permission.VIEW_SYSTEM_LOGS, Permission.MANAGE_SYSTEM_SETTINGS, Permission.MANAGE_SECURITY_SETTINGS, Permission.VIEW_SECURITY_LOGS,
+        Permission.MANAGE_API_KEYS, Permission.CONFIGURE_AI_SETTINGS, Permission.APPROVE_AI_OPERATIONS,
+        Permission.USE_AI_FEATURES, Permission.EXECUTE_AI_TASKS, Permission.VIEW_ADMIN, Permission.VIEW_ANALYTICS,
+        Permission.VIEW_WORKFLOW, Permission.CREATE_WORKFLOW, Permission.UPDATE_WORKFLOW, Permission.DELETE_WORKFLOW,
+        Permission.VIEW_DASHBOARD, Permission.VIEW_NOTIFICATIONS
       ],
       SUPER_ADMIN: Object.values(Permission),
       AI_AGENT: [

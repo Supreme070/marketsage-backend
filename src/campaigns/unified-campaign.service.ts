@@ -144,10 +144,6 @@ export class UnifiedCampaignService {
 
     const where: any = {
       createdById: userId,
-      definition: {
-        path: ['type'],
-        equals: 'UNIFIED_CAMPAIGN',
-      },
     };
 
     if (search) {
@@ -172,27 +168,36 @@ export class UnifiedCampaignService {
       this.prisma.workflow.count({ where }),
     ]);
 
-    // Transform workflows to unified campaign format
-    const campaigns = workflows.map(workflow => {
-      const definition = JSON.parse(workflow.definition);
-      return {
-        id: workflow.id,
-        name: workflow.name,
-        description: workflow.description,
-        type: definition.type,
-        channels: definition.channels,
-        status: workflow.status,
-        createdAt: workflow.createdAt,
-        createdBy: workflow.createdBy || { id: workflow.createdById, name: 'Unknown', email: 'unknown@example.com' },
-        campaignIds: definition.campaignIds,
-        priority: definition.priority,
-        budget: definition.budget,
-        costPerMessage: definition.costPerMessage,
-        recurrence: definition.recurrence,
-        timezone: definition.timezone,
-        scheduledFor: definition.scheduledFor,
-      };
-    });
+    // Transform workflows to unified campaign format and filter by type
+    const campaigns = workflows
+      .filter(workflow => {
+        try {
+          const definition = JSON.parse(workflow.definition);
+          return definition.type === 'UNIFIED_CAMPAIGN';
+        } catch (error) {
+          return false;
+        }
+      })
+      .map(workflow => {
+        const definition = JSON.parse(workflow.definition);
+        return {
+          id: workflow.id,
+          name: workflow.name,
+          description: workflow.description,
+          type: definition.type,
+          channels: definition.channels,
+          status: workflow.status,
+          createdAt: workflow.createdAt,
+          createdBy: workflow.createdBy || { id: workflow.createdById, name: 'Unknown', email: 'unknown@example.com' },
+          campaignIds: definition.campaignIds,
+          priority: definition.priority,
+          budget: definition.budget,
+          costPerMessage: definition.costPerMessage,
+          recurrence: definition.recurrence,
+          timezone: definition.timezone,
+          scheduledFor: definition.scheduledFor,
+        };
+      });
 
     return {
       campaigns,
@@ -276,6 +281,61 @@ export class UnifiedCampaignService {
       recurrence: definition.recurrence,
       timezone: definition.timezone,
       scheduledFor: definition.scheduledFor,
+    };
+  }
+
+  async updateUnifiedCampaign(id: string, data: any, userId: string, organizationId: string) {
+    const workflow = await this.prisma.workflow.findFirst({
+      where: {
+        id,
+        createdById: userId,
+        definition: {
+          contains: '"type":"UNIFIED_CAMPAIGN"',
+        },
+      },
+    });
+
+    if (!workflow) {
+      throw new NotFoundException('Unified campaign not found');
+    }
+
+    const definition = JSON.parse(workflow.definition);
+    
+    // Update the definition with new data
+    const updatedDefinition = {
+      ...definition,
+      ...data,
+      type: 'UNIFIED_CAMPAIGN', // Ensure type remains the same
+    };
+
+    const updatedWorkflow = await this.prisma.workflow.update({
+      where: { id },
+      data: {
+        name: data.name || workflow.name,
+        description: data.description || workflow.description,
+        definition: JSON.stringify(updatedDefinition),
+        updatedAt: new Date(),
+      },
+      include: {
+        createdBy: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    return {
+      id: updatedWorkflow.id,
+      name: updatedDefinition.name,
+      description: updatedDefinition.description,
+      type: updatedDefinition.type,
+      channels: updatedDefinition.channels,
+      status: updatedDefinition.status || 'DRAFT',
+      createdAt: updatedWorkflow.createdAt,
+      updatedAt: updatedWorkflow.updatedAt,
+      createdBy: updatedWorkflow.createdBy,
+      priority: updatedDefinition.priority || 1,
+      recurrence: updatedDefinition.recurrence || 'ONE_TIME',
+      timezone: updatedDefinition.timezone || 'UTC',
     };
   }
 

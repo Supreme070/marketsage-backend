@@ -142,6 +142,57 @@ export class AuthController {
     }
   }
 
+
+  @Post('refresh')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(@Request() req: any): Promise<ApiResponse> {
+    try {
+      const result = await this.authService.refreshToken(req.user.id);
+      return {
+        success: true,
+        data: result,
+        message: 'Token refreshed successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Token refresh error: ${err.message}`);
+      return {
+        success: false,
+        error: {
+          code: 'TOKEN_REFRESH_FAILED',
+          message: 'Token refresh failed',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async logout(@Request() req: any): Promise<ApiResponse> {
+    try {
+      await this.authService.logout(req.user.id);
+      return {
+        success: true,
+        data: null,
+        message: 'Logged out successfully',
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Logout error: ${err.message}`);
+      return {
+        success: false,
+        error: {
+          code: 'LOGOUT_FAILED',
+          message: 'Logout failed',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
   @Post('verify-token')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

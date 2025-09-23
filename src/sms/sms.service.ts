@@ -677,14 +677,16 @@ export class SMSService {
 
     const provider = await this.prisma.sMSProvider.create({
       data: {
-        ...data,
+        provider: data.provider,
+        senderId: data.senderId,
+        isActive: data.isActive || false,
         organizationId,
         credentials: JSON.stringify({
-          apiKey: data.apiKey,
-          apiSecret: data.apiSecret,
-          username: data.username,
-          password: data.password,
-          baseUrl: data.baseUrl,
+          apiKey: data.apiKey || null,
+          apiSecret: data.apiSecret || null,
+          username: data.username || null,
+          password: data.password || null,
+          baseUrl: data.baseUrl || null,
         }),
       },
       include: {

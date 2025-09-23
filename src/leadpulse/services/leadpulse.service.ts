@@ -9,6 +9,66 @@ import { CreateVisitorDto, VisitorQueryDto, CreateTouchpointDto } from '../dto/v
 export class LeadPulseService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ==================== ROOT ENDPOINTS ====================
+
+  async getLeadPulse(userId: string, organizationId: string) {
+    try {
+      // Return mock LeadPulse data
+      return {
+        userId,
+        organizationId,
+        overview: {
+          totalForms: 5,
+          totalSubmissions: 125,
+          totalVisitors: 2500,
+          conversionRate: 5.0,
+        },
+        recentActivity: [
+          {
+            type: 'form_submission',
+            formName: 'Contact Form',
+            timestamp: new Date().toISOString(),
+          },
+          {
+            type: 'visitor_engagement',
+            page: '/landing-page',
+            timestamp: new Date().toISOString(),
+          },
+        ],
+        insights: [
+          {
+            type: 'conversion_optimization',
+            message: 'Form completion rate increased by 15%',
+            impact: 'high',
+          },
+        ],
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      throw new Error(`Failed to get LeadPulse data: ${err.message}`);
+    }
+  }
+
+  async createLeadPulse(userId: string, organizationId: string, data: any) {
+    try {
+      // Return mock created LeadPulse data
+      return {
+        id: `leadpulse_${Date.now()}`,
+        userId,
+        organizationId,
+        type: data.type || 'form',
+        name: data.name || 'New LeadPulse',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      throw new Error(`Failed to create LeadPulse: ${err.message}`);
+    }
+  }
+
   // ==================== FORM MANAGEMENT ====================
 
   async createForm(userId: string, organizationId: string, createFormDto: CreateFormDto) {

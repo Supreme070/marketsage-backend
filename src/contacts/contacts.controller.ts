@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -45,12 +46,19 @@ export class ContactsController {
     return this.contactsService.findByEmail(email, req.user.id);
   }
 
+  @Get('export')
+  @HttpCode(HttpStatus.OK)
+  async exportContacts(@Query() query: any, @Request() req: AuthenticatedRequest) {
+    return this.contactsService.exportContacts(query, req.user.id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return this.contactsService.findOne(id, req.user.id);
   }
 
-  @Patch(':id')
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
     @Body() updateContactDto: UpdateContactDto,
@@ -63,5 +71,11 @@ export class ContactsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return this.contactsService.remove(id, req.user.id);
+  }
+
+  @Post('import')
+  @HttpCode(HttpStatus.OK)
+  async importContacts(@Body() data: any, @Request() req: AuthenticatedRequest) {
+    return this.contactsService.importContacts(data, req.user.id);
   }
 }

@@ -10,6 +10,22 @@ import { Permission } from '../types/permissions';
 export class TracingController {
   constructor(private readonly tracingService: SimpleTracingService) {}
 
+  @Get()
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(Permission.VIEW_SYSTEM_LOGS)
+  @HttpCode(HttpStatus.OK)
+  getTracing() {
+    return {
+      success: true,
+      data: {
+        service: 'SimpleTracingService',
+        status: 'healthy',
+        traces: this.tracingService.getAllTraces(),
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
   @Get('trace/:traceId')
   @UseGuards(PermissionsGuard)
   @RequirePermissions(Permission.VIEW_SYSTEM_LOGS)

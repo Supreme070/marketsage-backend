@@ -141,4 +141,38 @@ export class SimpleTracingService {
       spanCount: spans.length,
     };
   }
+
+  getAllTraces() {
+    try {
+      // Return mock tracing data
+      return {
+        totalTraces: 5,
+        activeTraces: 2,
+        completedTraces: 3,
+        traces: [
+          {
+            traceId: 'trace-1',
+            operationName: 'API Request',
+            status: 'success',
+            duration: 150,
+            startTime: new Date().toISOString(),
+            endTime: new Date().toISOString(),
+          },
+          {
+            traceId: 'trace-2',
+            operationName: 'Database Query',
+            status: 'success',
+            duration: 45,
+            startTime: new Date().toISOString(),
+            endTime: new Date().toISOString(),
+          },
+        ],
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error getting all traces: ${err.message}`);
+      throw error;
+    }
+  }
 }

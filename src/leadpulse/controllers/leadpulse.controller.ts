@@ -31,6 +31,20 @@ interface ApiKeyRequest extends Request {
 export class LeadPulseController {
   constructor(private readonly leadPulseService: LeadPulseService) {}
 
+  // ==================== ROOT ENDPOINTS ====================
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getLeadPulse(@Request() req: AuthenticatedRequest) {
+    return this.leadPulseService.getLeadPulse(req.user.id, req.user.organizationId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createLeadPulse(@Request() req: AuthenticatedRequest, @Body() data: any) {
+    return this.leadPulseService.createLeadPulse(req.user.id, req.user.organizationId, data);
+  }
+
   // ==================== FORM MANAGEMENT ====================
 
   @UseGuards(JwtAuthGuard)

@@ -206,7 +206,7 @@ export class OrganizationsController {
   @Get(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.VIEW_ORGANIZATION)
-  @RequireOwnership('Organization')
+  @RequireOwnership('organization')
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async findOne(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -232,7 +232,7 @@ export class OrganizationsController {
   @Get(':id/stats')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.VIEW_ORGANIZATION)
-  @RequireOwnership('Organization')
+  @RequireOwnership('organization')
   @RateLimit(30, 60 * 1000) // 30 requests per minute
   async getOrganizationStats(@Param('id') id: string): Promise<ApiResponse> {
     try {
@@ -258,7 +258,7 @@ export class OrganizationsController {
   @Get(':id/users')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.VIEW_ORGANIZATION)
-  @RequireOwnership('Organization')
+  @RequireOwnership('organization')
   @RateLimit(50, 60 * 1000) // 50 requests per minute
   async getOrganizationUsers(
     @Param('id') id: string,
@@ -291,7 +291,7 @@ export class OrganizationsController {
   @Patch(':id')
   @UseGuards(PermissionsGuard, OwnershipGuard, RateLimitGuard)
   @RequirePermissions(Permission.UPDATE_ORGANIZATION)
-  @RequireOwnership('Organization')
+  @RequireOwnership('organization')
   @RateLimit(20, 60 * 1000) // 20 updates per minute
   async update(
     @Param('id') id: string,

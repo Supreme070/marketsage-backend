@@ -58,7 +58,10 @@ export class OwnershipGuard implements CanActivate {
         return true;
       }
 
-      switch (resourceType) {
+      // Normalize resource type to handle both cases during transition
+      const normalizedResourceType = resourceType.toLowerCase();
+
+      switch (normalizedResourceType) {
         case 'workflow':
           const workflow = await this.prisma.workflow.findUnique({
             where: { id: resourceId },
@@ -127,6 +130,32 @@ export class OwnershipGuard implements CanActivate {
           
           // Users can only access their own profile
           if (userRole === 'USER' && user.id !== userId) return false;
+          
+          return true;
+
+        case 'organization':
+          const organization = await this.prisma.organization.findUnique({
+            where: { id: resourceId },
+            select: { id: true }
+          });
+          
+          if (!organization) return false;
+          
+          // Users can only access their own organization
+          if (organization.id !== organizationId) return false;
+          
+          return true;
+
+        case 'notification':
+          const notification = await this.prisma.notification.findUnique({
+            where: { id: resourceId },
+            select: { userId: true }
+          });
+          
+          if (!notification) return false;
+          
+          // Users can only access their own notifications
+          if (notification.userId !== userId) return false;
           
           return true;
 
