@@ -64,4 +64,24 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
+    try {
+      this.logger.log(`📧 Sending password reset email to ${email}`);
+      
+      // Use AWS SES service for sending emails
+      const result = await this.awsSesService.sendPasswordResetEmail(email, resetToken);
+      
+      if (result) {
+        this.logger.log(`✅ Password reset email sent successfully to ${email}`);
+      } else {
+        this.logger.error(`❌ Failed to send password reset email to ${email}`);
+      }
+      
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${email}:`, error);
+      return false;
+    }
+  }
 }

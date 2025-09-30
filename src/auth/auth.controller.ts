@@ -16,7 +16,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 import { RateLimit } from './decorators/rate-limit.decorator';
-import { LoginDto, RegisterDto, RegisterInitialDto, RegisterVerifyDto, RegisterCompleteDto } from './dto';
+import { LoginDto, RegisterDto, RegisterInitialDto, RegisterVerifyDto, RegisterCompleteDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
 import { ApiResponse } from '../types';
 
 @Controller('auth')
@@ -332,6 +332,63 @@ export class AuthController {
         error: {
           code: err.name || 'REGISTRATION_COMPLETION_ERROR',
           message: err.message || 'Registration completion failed',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('forgot-password')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(3, 15 * 60 * 1000) // 3 attempts per 15 minutes
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<ApiResponse> {
+    try {
+      await this.authService.forgotPassword(forgotPasswordDto.email);
+      return {
+        success: true,
+        message: 'Password reset email sent successfully',
+        data: { email: forgotPasswordDto.email }
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Forgot password error: ${err.message}`);
+      
+      return {
+        success: false,
+        error: {
+          code: 'FORGOT_PASSWORD_FAILED',
+          message: err.message || 'Failed to send password reset email',
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+  }
+
+  @Post('reset-password')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(5, 15 * 60 * 1000) // 5 attempts per 15 minutes
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<ApiResponse> {
+    try {
+      const result = await this.authService.resetPassword(
+        resetPasswordDto.token,
+        resetPasswordDto.password
+      );
+      return {
+        success: true,
+        message: 'Password reset successfully',
+        data: { userId: result.userId }
+      };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Reset password error: ${err.message}`);
+      
+      return {
+        success: false,
+        error: {
+          code: 'RESET_PASSWORD_FAILED',
+          message: err.message || 'Failed to reset password',
           timestamp: new Date().toISOString(),
         },
       };

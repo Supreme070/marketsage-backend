@@ -134,6 +134,54 @@ export class AwsSesService {
     }
   }
 
+  async sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
+    try {
+      this.logger.log(`📧 Sending password reset email to ${email}`);
+      
+      const template = this.createPasswordResetTemplate(resetToken);
+      
+      const params: SendEmailCommandInput = {
+        Source: `${this.fromName} <${this.fromEmail}>`,
+        Destination: {
+          ToAddresses: [email],
+        },
+        Message: {
+          Subject: {
+            Data: template.subject,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Html: {
+              Data: template.html,
+              Charset: 'UTF-8',
+            },
+            Text: {
+              Data: template.text,
+              Charset: 'UTF-8',
+            },
+          },
+        },
+      };
+
+      const command = new SendEmailCommand(params);
+      const result = await this.sesClient.send(command);
+
+      this.logger.log(`✅ Password reset email sent successfully to ${email}. MessageId: ${result.MessageId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`❌ Failed to send password reset email to ${email}:`, error);
+      
+      // In development, fall back to console logging
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.warn(`🔄 Falling back to console logging for development`);
+        this.logPasswordResetEmail(email, resetToken);
+        return true;
+      }
+      
+      return false;
+    }
+  }
+
   private createVerificationTemplate(name: string, pin: string): EmailTemplate {
     const subject = 'Verify your MarketSage account';
     
@@ -502,5 +550,149 @@ This email was sent by MarketSage. If you have any questions, please contact our
       this.logger.error('❌ AWS SES connection test failed:', error);
       return false;
     }
+  }
+
+  private createPasswordResetTemplate(resetToken: string): EmailTemplate {
+    const subject = 'Reset your MarketSage password';
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password - MarketSage</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background: #1d4ed8;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">MarketSage</div>
+            <h1 class="title">Reset Your Password</h1>
+        </div>
+        
+        <p>We received a request to reset your password for your MarketSage account.</p>
+        
+        <p>Click the button below to reset your password:</p>
+        
+        <div style="text-align: center;">
+            <a href="${resetUrl}" class="button">Reset Password</a>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong>
+            <ul>
+                <li>This link will expire in 1 hour</li>
+                <li>If you didn't request this password reset, please ignore this email</li>
+                <li>For security, never share this link with anyone</li>
+            </ul>
+        </div>
+        
+        <p>If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; background: #f3f4f6; padding: 10px; border-radius: 4px; font-family: monospace;">
+            ${resetUrl}
+        </p>
+        
+        <div class="footer">
+            <p>This email was sent by MarketSage. If you have any questions, please contact our support team.</p>
+            <p>© 2025 MarketSage. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+    const text = `
+MarketSage - Password Reset
+
+Reset Your Password
+
+We received a request to reset your password for your MarketSage account.
+
+Click the link below to reset your password:
+${resetUrl}
+
+Important:
+- This link will expire in 1 hour
+- If you didn't request this password reset, please ignore this email
+- For security, never share this link with anyone
+
+This email was sent by MarketSage. If you have any questions, please contact our support team.
+
+© 2025 MarketSage. All rights reserved.
+`;
+
+    return { subject, html, text };
+  }
+
+  private logPasswordResetEmail(email: string, resetToken: string): void {
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    console.log('\n' + '='.repeat(60));
+    console.log('📧 PASSWORD RESET EMAIL (Development Mode)');
+    console.log('='.repeat(60));
+    console.log(`To: ${email}`);
+    console.log(`Reset Token: ${resetToken}`);
+    console.log(`Reset URL: ${resetUrl}`);
+    console.log(`Subject: Reset your MarketSage password`);
+    console.log('='.repeat(60) + '\n');
   }
 }
