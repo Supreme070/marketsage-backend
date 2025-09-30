@@ -142,6 +142,10 @@ model User {
   suspensionReason String?  // Reason for suspension
   adminNotes      String?   // Admin notes about the user
   lastActiveAt    DateTime? // Last activity timestamp for admin tracking
+  
+  // Password reset fields
+  resetToken      String?   // Token for password reset
+  resetTokenExpiry DateTime? // Expiry time for reset token
 
   // Relations
   organization           Organization?           @relation(fields: [organizationId], references: [id])
