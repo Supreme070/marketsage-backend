@@ -51,6 +51,8 @@ export class AuthService {
           data: {
             name: registerDto.organizationName,
             plan: 'FREE',
+            websiteUrl: registerDto.website,
+            address: registerDto.country, // Using address field for country
           },
         });
         this.logger.debug(`Organization created with ID: ${organization.id}`);
