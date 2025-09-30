@@ -19,4 +19,16 @@ export class RegisterDto {
   @IsString({ message: 'Organization name must be a string' })
   @MinLength(2, { message: 'Organization name must be at least 2 characters long' })
   organizationName?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Website must be a string' })
+  website?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Industry must be a string' })
+  industry?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Country must be a string' })
+  country?: string;
 }
